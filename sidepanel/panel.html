@@ -13,86 +13,95 @@
     <button class="chrome-settings" id="btn-settings" title="Настройки (API-ключ, профиль, язык писем)">⚙</button>
   </header>
 
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="check" type="button">Проверка</button>
+    <button class="tab-btn" data-tab="profile" type="button">Профиль</button>
+    <button class="tab-btn" data-tab="analytics" type="button">Аналитика</button>
+    <button class="tab-btn" data-tab="history" type="button">Журнал</button>
+  </nav>
+
   <main class="wrap">
 
-    <section class="card">
-      <div class="card-head">
-        <span class="label">Объект проверки</span>
-        <button class="linkbtn" id="btn-reextract">обновить со страницы</button>
-      </div>
-      <div class="meta" id="vacancy-meta">Открой страницу вакансии на hh.ru, LinkedIn или Upwork — текст подтянется автоматически. Либо вставь текст вручную ниже.</div>
-      <textarea id="vacancy-text" rows="7" placeholder="Текст вакансии появится здесь автоматически, либо вставь его вручную..."></textarea>
-      <button class="cta" id="btn-check">Проверить соответствие</button>
-      <div class="error" id="error"></div>
-      <button class="cta ghost" id="btn-open-settings" hidden>Открыть настройки</button>
-    </section>
+    <div class="tab-panel" data-tab="check">
 
-    <div class="loading" id="loading">
-      <span id="loading-label">Проверяю</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <section class="card">
+        <div class="card-head">
+          <span class="label">Объект проверки</span>
+          <button class="linkbtn" id="btn-reextract">обновить со страницы</button>
+        </div>
+        <div class="meta" id="vacancy-meta">Открой страницу вакансии на hh.ru, LinkedIn или Upwork — текст подтянется автоматически. Либо вставь текст вручную ниже.</div>
+        <textarea id="vacancy-text" rows="7" placeholder="Текст вакансии появится здесь автоматически, либо вставь его вручную..."></textarea>
+        <button class="cta" id="btn-check">Проверить соответствие</button>
+        <div class="error" id="error"></div>
+        <button class="cta ghost" id="btn-open-settings" hidden>Открыть настройки</button>
+      </section>
+
+      <div class="loading" id="loading">
+        <span id="loading-label">Проверяю</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+
+      <section class="card" id="result" hidden>
+        <div class="card-head">
+          <span class="label">Заключение</span>
+          <span class="mono muted" id="result-id"></span>
+        </div>
+
+        <div class="verdict-row"><span class="chip chip-verdict" id="verdict-chip"></span></div>
+
+        <div class="tiles">
+          <div class="tile">
+            <div class="gauge">
+              <svg viewBox="0 0 76 76" class="gauge-svg">
+                <circle class="gauge-track" cx="38" cy="38" r="30"></circle>
+                <circle class="gauge-fill" id="tile-score-arc" cx="38" cy="38" r="30"></circle>
+              </svg>
+              <div class="gauge-num" id="tile-score">—</div>
+            </div>
+            <div class="tile-label">индекс</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="tile-effort">—</div>
+            <div class="tile-label">цена отклика</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="tile-boost">—</div>
+            <div class="tile-label">рычаг</div>
+          </div>
+        </div>
+
+        <div class="block-title">Разбор совпадения</div>
+        <div class="ledger" id="ledger"></div>
+
+        <div class="block-title">Показания</div>
+        <p class="reasoning" id="reasoning"></p>
+
+        <div class="block-title">Сильные стороны</div>
+        <ul class="list selling" id="selling"></ul>
+
+        <div class="block-title">Факторы риска</div>
+        <ul class="list flags" id="flags"></ul>
+
+        <div class="booster" id="booster" hidden>
+          <span class="booster-delta" id="booster-delta"></span>
+          <span id="booster-text"></span>
+        </div>
+
+        <button class="cta ghost" id="btn-letter">Написать сопроводительное письмо</button>
+        <div class="loading" id="letter-loading">
+          <span id="letter-loading-label">Пишу письмо</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="letter-block" id="letter-block" hidden>
+          <textarea id="letter-text" rows="12"></textarea>
+          <button class="cta" id="btn-copy">Скопировать</button>
+        </div>
+      </section>
+
     </div>
 
-    <section class="card" id="result" hidden>
-      <div class="card-head">
-        <span class="label">Заключение</span>
-        <span class="mono muted" id="result-id"></span>
-      </div>
+    <div class="tab-panel" data-tab="profile" hidden>
+      <section class="card">
+        <div class="card-head"><span class="label">Мой профиль</span></div>
 
-      <div class="verdict-row"><span class="chip chip-verdict" id="verdict-chip"></span></div>
-
-      <div class="tiles">
-        <div class="tile">
-          <div class="gauge">
-            <svg viewBox="0 0 76 76" class="gauge-svg">
-              <circle class="gauge-track" cx="38" cy="38" r="30"></circle>
-              <circle class="gauge-fill" id="tile-score-arc" cx="38" cy="38" r="30"></circle>
-            </svg>
-            <div class="gauge-num" id="tile-score">—</div>
-          </div>
-          <div class="tile-label">индекс</div>
-        </div>
-        <div class="tile">
-          <div class="tile-num" id="tile-effort">—</div>
-          <div class="tile-label">цена отклика</div>
-        </div>
-        <div class="tile">
-          <div class="tile-num" id="tile-boost">—</div>
-          <div class="tile-label">рычаг</div>
-        </div>
-      </div>
-
-      <div class="block-title">Разбор совпадения</div>
-      <div class="ledger" id="ledger"></div>
-
-      <div class="block-title">Показания</div>
-      <p class="reasoning" id="reasoning"></p>
-
-      <div class="block-title">Сильные стороны</div>
-      <ul class="list selling" id="selling"></ul>
-
-      <div class="block-title">Факторы риска</div>
-      <ul class="list flags" id="flags"></ul>
-
-      <div class="booster" id="booster" hidden>
-        <span class="booster-delta" id="booster-delta"></span>
-        <span id="booster-text"></span>
-      </div>
-
-      <button class="cta ghost" id="btn-letter">Написать сопроводительное письмо</button>
-      <div class="loading" id="letter-loading">
-        <span id="letter-loading-label">Пишу письмо</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-      <div class="letter-block" id="letter-block" hidden>
-        <textarea id="letter-text" rows="12"></textarea>
-        <button class="cta" id="btn-copy">Скопировать</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-head">
-        <span class="label">Мой профиль</span>
-        <button class="linkbtn" id="profile-toggle">развернуть</button>
-      </div>
-      <div id="profile-body" hidden>
         <select id="profile-select"></select>
         <button class="cta ghost" id="btn-import-resume" hidden>Импортировать резюме с этой страницы</button>
         <div class="meta" id="profile-import-status"></div>
@@ -124,48 +133,52 @@
           <div class="block-title">Что поправить</div>
           <ul class="list selling" id="rr-actions"></ul>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
-    <section class="card">
-      <div class="card-head">
-        <span class="label">Аналитика</span>
-      </div>
-      <div class="tiles">
-        <div class="tile">
-          <div class="tile-num" id="an-total">—</div>
-          <div class="tile-label">проверок</div>
+    <div class="tab-panel" data-tab="analytics" hidden>
+      <section class="card">
+        <div class="card-head">
+          <span class="label">Аналитика</span>
         </div>
-        <div class="tile">
-          <div class="tile-num" id="an-applied">—</div>
-          <div class="tile-label">откликов</div>
+        <div class="tiles">
+          <div class="tile">
+            <div class="tile-num" id="an-total">—</div>
+            <div class="tile-label">проверок</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="an-applied">—</div>
+            <div class="tile-label">откликов</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="an-avg">—</div>
+            <div class="tile-label">средний индекс</div>
+          </div>
         </div>
-        <div class="tile">
-          <div class="tile-num" id="an-avg">—</div>
-          <div class="tile-label">средний индекс</div>
+        <div class="an-donut-row" id="an-donut-row">
+          <div class="donut-wrap-outer">
+            <svg id="an-donut" width="84" height="84" viewBox="0 0 42 42"></svg>
+            <div class="donut-total" id="an-donut-total"></div>
+          </div>
+          <div class="donut-legend" id="an-donut-legend"></div>
         </div>
-      </div>
-      <div class="an-donut-row" id="an-donut-row">
-        <div class="donut-wrap-outer">
-          <svg id="an-donut" width="84" height="84" viewBox="0 0 42 42"></svg>
-          <div class="donut-total" id="an-donut-total"></div>
+        <div class="an-breakdown" id="an-sources"></div>
+        <div class="an-sparkline-wrap">
+          <svg id="an-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
         </div>
-        <div class="donut-legend" id="an-donut-legend"></div>
-      </div>
-      <div class="an-breakdown" id="an-sources"></div>
-      <div class="an-sparkline-wrap">
-        <svg id="an-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
-      </div>
-    </section>
+      </section>
+    </div>
 
-    <section class="card">
-      <div class="card-head">
-        <span class="label">Журнал проверок</span>
-        <span class="mono muted" id="history-count"></span>
-      </div>
-      <div class="meta">Кружок слева от каждой строки — отметка «откликнулся» (жми, чтобы переключить); отправка отклика всегда вручную на площадке.</div>
-      <div class="history" id="history"></div>
-    </section>
+    <div class="tab-panel" data-tab="history" hidden>
+      <section class="card">
+        <div class="card-head">
+          <span class="label">Журнал проверок</span>
+          <span class="mono muted" id="history-count"></span>
+        </div>
+        <div class="meta">Кружок слева от каждой строки — отметка «откликнулся» (жми, чтобы переключить); отправка отклика всегда вручную на площадке.</div>
+        <div class="history" id="history"></div>
+      </section>
+    </div>
 
   </main>
 

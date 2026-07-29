@@ -157,13 +157,6 @@
     $('profile-import-status').textContent = '';
   });
 
-  $('profile-toggle').addEventListener('click', () => {
-    const body = $('profile-body');
-    const collapsed = body.hidden;
-    body.hidden = !collapsed;
-    $('profile-toggle').textContent = collapsed ? 'свернуть' : 'развернуть';
-  });
-
   $('btn-save-profile').addEventListener('click', async () => {
     const active = profilesCache.find(p => p.id === activeProfileIdCache);
     if (active) {
@@ -184,12 +177,9 @@
     const tab = await getActiveTab();
     const onResumePage = isResumePageUrl(tab && tab.url);
     $('btn-import-resume').hidden = !onResumePage;
-    // На странице резюме сразу открываем блок профиля — не нужно сначала
-    // жать "развернуть", чтобы увидеть кнопку импорта.
-    if (onResumePage && $('profile-body').hidden) {
-      $('profile-body').hidden = false;
-      $('profile-toggle').textContent = 'свернуть';
-    }
+    // На странице резюме сразу открываем вкладку профиля — не нужно искать
+    // кнопку импорта самому.
+    if (onResumePage) activateTab('profile');
   }
 
   $('btn-import-resume').addEventListener('click', async () => {
@@ -825,8 +815,26 @@
   $('btn-settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
   openSettingsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
+  // ---------- табы ----------
+
+  function activateTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.hidden = panel.dataset.tab !== name;
+    });
+  }
+
+  function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+  }
+
   // ---------- init ----------
 
+  initTabs();
   loadProfile();
   loadHistory();
   extractFromActiveTab();
