@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!-- Статичный предпросмотр панели с мок-данными для визуальной проверки дизайна.
+     Открывать напрямую в браузере; рабочая панель — sidepanel/panel.html. -->
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="../sidepanel/panel.css">
+  <title>JFC — предпросмотр</title>
+  <style>body { max-width: 380px; margin: 0 auto; }</style>
+</head>
+<body>
+
+  <header class="chrome">
+    <span class="chrome-dots"><i></i><i></i><i></i></span>
+    <span class="chrome-path">macuniverse.app / jfc / <span class="chrome-id">#JFC-20260727-07</span></span>
+    <button class="chrome-settings">⚙</button>
+  </header>
+
+  <main class="wrap">
+
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Объект проверки</span>
+        <button class="linkbtn">обновить со страницы</button>
+      </div>
+      <div class="meta">AI Automation Specialist — ООО «Лабория» — hh.ru</div>
+      <textarea rows="4">Ищем специалиста по автоматизации бизнес-процессов: n8n, Python, REST API, интеграции с CRM...</textarea>
+      <button class="cta">Проверить соответствие</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Заключение</span>
+        <span class="mono muted">#JFC-20260727-07</span>
+      </div>
+
+      <div class="verdict-row"><span class="chip chip-verdict chip-good">ОТКЛИКАТЬСЯ</span></div>
+
+      <div class="tiles">
+        <div class="tile">
+          <div class="gauge">
+            <svg viewBox="0 0 76 76" class="gauge-svg">
+              <circle class="gauge-track" cx="38" cy="38" r="30"></circle>
+              <circle class="gauge-fill good" cx="38" cy="38" r="30" style="stroke-dashoffset:49"></circle>
+            </svg>
+            <div class="gauge-num good">74</div>
+          </div>
+          <div class="tile-label">индекс</div>
+        </div>
+        <div class="tile">
+          <div class="tile-num">~12 мин</div>
+          <div class="tile-label">цена отклика</div>
+        </div>
+        <div class="tile">
+          <div class="tile-num">+8</div>
+          <div class="tile-label">рычаг</div>
+        </div>
+      </div>
+
+      <div class="block-title">Разбор совпадения</div>
+      <div class="ledger">
+        <div class="ledger-row base"><div class="ledger-top"><span class="ledger-text">базовый уровень</span><span class="ledger-delta">50</span></div></div>
+        <div class="ledger-row">
+          <div class="ledger-top"><span class="ledger-text">Стек совпадает: Python, REST API</span></div>
+          <div class="ledger-bar-track"><div class="ledger-bar-fill pos" style="width:30%">+18</div></div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-top"><span class="ledger-text">Домен: автоматизация процессов</span></div>
+          <div class="ledger-bar-track"><div class="ledger-bar-fill pos" style="width:20%">+12</div></div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-top"><span class="ledger-text">Нет опыта с Kubernetes</span></div>
+          <div class="ledger-bar-track"><div class="ledger-bar-fill neg" style="width:16.7%">−10</div></div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-top"><span class="ledger-text">Просят английский C1, у кандидата B2</span></div>
+          <div class="ledger-bar-track"><div class="ledger-bar-fill neg" style="width:6.7%">−4</div></div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-top"><span class="ledger-text">n8n/Zapier — прямое попадание</span></div>
+          <div class="ledger-bar-track"><div class="ledger-bar-fill pos" style="width:13.3%">+8</div></div>
+        </div>
+        <div class="ledger-row total"><div class="ledger-top"><span class="ledger-text">индекс</span><span class="ledger-delta">74</span></div></div>
+      </div>
+
+      <div class="block-title">Показания</div>
+      <p class="reasoning">Роль про автоматизацию процессов на стеке кандидата — прямое попадание в целевой трек. Требования по DevOps-инфраструктуре слабо покрыты, но они вторичны для этой позиции.</p>
+
+      <div class="block-title">Сильные стороны</div>
+      <ul class="list selling">
+        <li>Год продакшн-опыта с LLM и промпт-инжинирингом</li>
+        <li>Unit-экономика и аналитика — понимание бизнес-метрик</li>
+      </ul>
+
+      <div class="block-title">Факторы риска</div>
+      <ul class="list flags">
+        <li>Kubernetes в требованиях — готовить ответ про Docker</li>
+        <li>Английский C1 в описании, у кандидата B2</li>
+      </ul>
+
+      <div class="booster">
+        <span class="booster-delta">+8</span>
+        <span>Упомянуть в письме кейс автоматизации с n8n — это главный фильтр отбора в этой вакансии.</span>
+      </div>
+
+      <button class="cta ghost">Написать сопроводительное письмо</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="label">Аналитика</span></div>
+      <div class="tiles">
+        <div class="tile"><div class="tile-num">4</div><div class="tile-label">проверок</div></div>
+        <div class="tile"><div class="tile-num">2 (50%)</div><div class="tile-label">откликов</div></div>
+        <div class="tile"><div class="tile-num">59</div><div class="tile-label">средний индекс</div></div>
+      </div>
+      <div class="an-donut-row">
+        <svg width="60" height="60" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--line)" stroke-width="6"></circle>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--green)" stroke-width="6"
+                  stroke-dasharray="50 50" stroke-dashoffset="100" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--amber)" stroke-width="6"
+                  stroke-dasharray="25 75" stroke-dashoffset="50" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--red)" stroke-width="6"
+                  stroke-dasharray="25 75" stroke-dashoffset="25" transform="rotate(-90 21 21)"></circle>
+        </svg>
+        <div class="donut-legend">
+          <div class="donut-legend-row"><span class="dot" style="background:var(--green)"></span>ОТКЛИКАТЬСЯ · 2</div>
+          <div class="donut-legend-row"><span class="dot" style="background:var(--amber)"></span>С ОГОВОРКАМИ · 1</div>
+          <div class="donut-legend-row"><span class="dot" style="background:var(--red)"></span>ПРОПУСТИТЬ · 1</div>
+        </div>
+      </div>
+      <div class="an-breakdown">
+        <span class="chip chip-mini chip-source">hh.ru: 3</span>
+        <span class="chip chip-mini chip-source">LinkedIn: 1</span>
+      </div>
+      <div class="an-sparkline-wrap">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <line x1="6" y1="30" x2="294" y2="30" stroke="var(--muted)" stroke-opacity="0.4" stroke-dasharray="3,3"></line>
+          <path d="M 4,50 L 77,42 L 150,46 L 223,20 L 296,15 L 296,56 L 4,56 Z" fill="var(--amber)" opacity="0.08"></path>
+          <polyline points="4,50 77,42 150,46 223,20 296,15" fill="none" stroke="var(--amber)" stroke-width="2"></polyline>
+          <circle cx="296" cy="15" r="3" fill="var(--amber)"></circle>
+          <text x="271" y="9" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700" fill="var(--amber-ink)">82</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Журнал проверок</span>
+        <span class="mono muted">3 шт</span>
+      </div>
+      <div class="history">
+        <div class="history-row">
+          <a class="history-title" href="#">hh.ru · AI Automation Specialist</a>
+          <span class="history-side"><span class="chip chip-mini chip-good">ОТКЛИКАТЬСЯ</span><span class="history-score">74</span></span>
+        </div>
+        <div class="history-row">
+          <a class="history-title" href="#">LinkedIn · Business Analyst</a>
+          <span class="history-side"><span class="chip chip-mini chip-mid">С ОГОВОРКАМИ</span><span class="history-score">58</span></span>
+        </div>
+        <div class="history-row">
+          <span class="history-title">hh.ru · Продавец-консультант</span>
+          <span class="history-side"><span class="chip chip-mini chip-bad">ПРОПУСТИТЬ</span><span class="history-score">21</span></span>
+        </div>
+        <div class="history-row">
+          <span class="history-title">hh.ru · Старая запись до редизайна</span>
+          <span class="history-side"><span class="chip chip-mini chip-good">ТВОЯ НИША</span><span class="history-score">82</span></span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Job Fit Copilot",
+  "version": "0.1.0",
+  "description": "Оценка соответствия вакансии профилю кандидата и генерация сопроводительных писем (hh.ru, LinkedIn, Upwork).",
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
+  "host_permissions": [
+    "https://*.hh.ru/*",
+    "https://*.linkedin.com/*",
+    "https://*.upwork.com/*",
+    "https://integrate.api.nvidia.com/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "sidepanel/panel.html" },
+  "options_ui": { "page": "options/options.html", "open_in_tab": true },
+  "content_scripts": [
+    { "matches": ["https://*.hh.ru/vacancy/*"], "js": ["content-scripts/extractor-hh.js"] },
+    { "matches": ["https://*.hh.ru/resume/*"], "js": ["content-scripts/extractor-hh-resume.js"] },
+    { "matches": ["https://*.linkedin.com/jobs/*"], "js": ["content-scripts/extractor-linkedin.js"] },
+    { "matches": ["https://*.upwork.com/jobs/*"], "js": ["content-scripts/extractor-upwork.js"] }
+  ],
+  "action": {
+    "default_title": "Job Fit Copilot",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="../sidepanel/panel.css">
+  <title>Job Fit Copilot — настройки</title>
+  <style>
+    .opt-wrap { max-width: 620px; margin: 0 auto; padding: 28px 20px 60px; }
+    .opt-title { font-size: 24px; font-weight: 800; margin: 10px 0 6px; letter-spacing: -0.01em; }
+    .opt-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 22px; line-height: 1.55; }
+    .opt-field { margin-bottom: 4px; }
+    .opt-hint { color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.5; }
+    .opt-hint a { color: var(--amber-ink); }
+    .opt-key-label { display: block; color: var(--muted); font-size: 12px; margin: 12px 0 4px; }
+    .opt-key-label:first-child { margin-top: 0; }
+    .opt-row { display: flex; gap: 8px; margin-top: 8px; }
+    .opt-row > input { flex: 1; }
+    input[type="password"], input[type="text"], select {
+      width: 100%;
+      background: var(--field);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--ink);
+      font-size: 13.5px;
+      padding: 10px 12px;
+      font-family: inherit;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(242, 163, 60, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="opt-wrap">
+    <span class="label">macuniverse it · job fit copilot</span>
+    <h1 class="opt-title">Настройки</h1>
+    <p class="opt-sub">Один раз: вставь ключ активного провайдера, выбери модель и проверь профиль кандидата. Всё хранится локально в браузере (chrome.storage.local) и уходит только напрямую в API выбранного провайдера.</p>
+
+    <div class="card">
+      <div class="card-head"><span class="label">API-ключи</span></div>
+      <div class="opt-field">
+        <label class="opt-key-label" for="opt-apikey-deepseek">DeepSeek V4 Flash (NVIDIA NIM)</label>
+        <input type="password" id="opt-apikey-deepseek" placeholder="nvapi-..." autocomplete="off">
+
+        <label class="opt-key-label" for="opt-apikey-glm">GLM-5.2 (NVIDIA NIM)</label>
+        <input type="password" id="opt-apikey-glm" placeholder="nvapi-..." autocomplete="off">
+
+        <label class="opt-key-label" for="opt-apikey-openai">OpenAI</label>
+        <input type="password" id="opt-apikey-openai" placeholder="sk-..." autocomplete="off">
+
+        <label class="opt-key-label" for="opt-apikey-anthropic">Anthropic</label>
+        <input type="password" id="opt-apikey-anthropic" placeholder="sk-ant-..." autocomplete="off">
+
+        <div class="opt-hint">
+          NVIDIA NIM — <a href="https://build.nvidia.com/" target="_blank" rel="noopener">build.nvidia.com</a> (один ключ на обе модели, если он общий на аккаунт).
+          OpenAI — <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a>.
+          Anthropic — <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>.
+          Нужен только ключ активной ниже модели, остальные можно оставить пустыми.
+          Хранится только в этом браузере. <a href="#" id="opt-toggle-key">показать</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="label">Активная модель</span></div>
+      <select id="opt-model">
+        <option value="deepseek">DeepSeek V4 Flash (NVIDIA NIM)</option>
+        <option value="glm">GLM-5.2 (NVIDIA NIM)</option>
+        <option value="openai">GPT-4.1 (OpenAI)</option>
+        <option value="anthropic">Claude Sonnet 4.6 (Anthropic)</option>
+      </select>
+      <div class="opt-hint">Какой ключ выше используется — определяется этим выбором. Пригодится как запасной вариант, если NVIDIA NIM лимитит запросы.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="label">Профили кандидата</span>
+        <button class="linkbtn" id="opt-profile-add">+ новый профиль</button>
+      </div>
+
+      <select id="opt-profile-select"></select>
+
+      <div class="opt-row">
+        <input type="text" id="opt-profile-name" placeholder="Название профиля">
+        <button class="cta ghost" id="opt-profile-rename">Переименовать</button>
+      </div>
+
+      <textarea id="opt-profile" rows="14"></textarea>
+
+      <div class="opt-row">
+        <button class="cta ghost" id="opt-profile-save-text">Сохранить текст</button>
+        <button class="cta ghost" id="opt-profile-delete">Удалить профиль</button>
+      </div>
+
+      <div class="opt-hint" id="opt-profile-meta"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="label">Язык писем по умолчанию</span></div>
+      <select id="opt-lang">
+        <option value="auto">Автоопределение по площадке (hh.ru — русский, LinkedIn/Upwork — английский)</option>
+        <option value="ru">Всегда русский</option>
+        <option value="en">Всегда английский</option>
+      </select>
+    </div>
+
+    <button class="cta" id="opt-save">Сохранить</button>
+    <div class="error" id="opt-error"></div>
+  </div>
+  <script src="../shared/constants.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
