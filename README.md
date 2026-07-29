@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — разбор совпадения вакансии по факторам вместо голого процента">
+</p>
+
 # Job Fit Copilot
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-4A7FD4)

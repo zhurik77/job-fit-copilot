@@ -292,17 +292,7 @@
     const score = computeScore(parsed);
     setGauge('rr-score', 'rr-score-arc', score, score >= 70 ? 'good' : score >= 45 ? 'mid' : 'bad');
 
-    const ledgerWrap = $('rr-ledger');
-    ledgerWrap.textContent = '';
-    addLedgerRow(ledgerWrap, 'базовый уровень', BASE_SCORE, 'base');
-    if (Array.isArray(parsed.ledger)) {
-      for (const item of parsed.ledger) {
-        const delta = Math.round(Number(item && item.delta) || 0);
-        if (!item || !item.text || delta === 0) continue;
-        addLedgerRow(ledgerWrap, String(item.text), delta, delta > 0 ? 'pos' : 'neg');
-      }
-    }
-    addLedgerRow(ledgerWrap, 'итог', score, 'total');
+    renderLedgerInto($('rr-ledger'), parsed.ledger, score, 'итог');
 
     $('rr-reasoning').textContent = parsed.reasoning || '';
     fillList($('rr-strengths'), parsed.strengths);
@@ -464,25 +454,29 @@
   }
 
   function renderLedger(ledger, total) {
-    const wrap = $('ledger');
+    renderLedgerInto($('ledger'), ledger, total, 'индекс');
+  }
+
+  function renderLedgerInto(wrap, ledger, total, totalLabel) {
     wrap.textContent = '';
 
     addLedgerRow(wrap, 'базовый уровень', BASE_SCORE, 'base');
 
-    if (Array.isArray(ledger)) {
-      for (const item of ledger) {
-        const delta = Math.round(Number(item && item.delta) || 0);
-        if (!item || !item.text || delta === 0) continue;
-        addLedgerRow(wrap, String(item.text), delta, delta > 0 ? 'pos' : 'neg');
-      }
+    const items = (Array.isArray(ledger) ? ledger : [])
+      .map(item => ({ text: item && item.text, delta: Math.round(Number(item && item.delta) || 0) }))
+      .filter(it => it.text && it.delta !== 0);
+    // Масштаб баров — по фактическому максимуму этого разбора, а не по
+    // потолку ±30 из промпта: иначе типичные дельты (±5..±20) рисуют
+    // бледные короткие огрызки бара вместо читаемой диаграммы.
+    const maxAbs = items.reduce((m, it) => Math.max(m, Math.abs(it.delta)), 1);
+    for (const it of items) {
+      addLedgerRow(wrap, it.text, it.delta, it.delta > 0 ? 'pos' : 'neg', maxAbs);
     }
 
-    addLedgerRow(wrap, 'индекс', total, 'total');
+    addLedgerRow(wrap, totalLabel, total, 'total');
   }
 
-  const LEDGER_BAR_MAX_DELTA = 30; // совпадает с диапазоном delta в промпте
-
-  function addLedgerRow(wrap, text, value, cls) {
+  function addLedgerRow(wrap, text, value, cls, maxAbs) {
     const row = document.createElement('div');
     row.className = 'ledger-row' + (cls === 'base' ? ' base' : '') + (cls === 'total' ? ' total' : '');
 
@@ -505,15 +499,14 @@
     }
     row.appendChild(top);
 
-    // Диаграмма-waterfall: заливка от центра вправо (плюс) или влево (минус),
-    // пропорционально |delta| к максимально возможной дельте по промпту,
-    // с самим числом прямо в заливке.
+    // Сплошной бар слева направо, длина — доля от самого большого |delta|
+    // в этом разборе (минимум 22%, чтобы мелкие факторы не терялись совсем).
     if (isDelta) {
       const track = document.createElement('div');
       track.className = 'ledger-bar-track';
       const fill = document.createElement('div');
       fill.className = 'ledger-bar-fill ' + cls;
-      const pct = Math.min(Math.abs(value), LEDGER_BAR_MAX_DELTA) / LEDGER_BAR_MAX_DELTA * 50;
+      const pct = Math.max(22, Math.abs(value) / maxAbs * 100);
       fill.style.width = pct + '%';
       fill.textContent = (cls === 'pos' ? '+' : '') + value;
       track.appendChild(fill);
@@ -718,14 +711,25 @@
   function renderVerdictDonut(verdictCounts, total) {
     const svg = $('an-donut');
     const legend = $('an-donut-legend');
+    const totalEl = $('an-donut-total');
     svg.innerHTML = '';
     legend.innerHTML = '';
+    totalEl.innerHTML = '';
     if (!total) return; // пустая история — донат остаётся пустым, без визуального мусора
+
+    const numEl = document.createElement('div');
+    numEl.className = 'num';
+    numEl.textContent = String(total);
+    const lblEl = document.createElement('div');
+    lblEl.className = 'lbl';
+    lblEl.textContent = 'всего';
+    totalEl.appendChild(numEl);
+    totalEl.appendChild(lblEl);
 
     const ns = 'http://www.w3.org/2000/svg';
     const track = document.createElementNS(ns, 'circle');
     track.setAttribute('cx', '21'); track.setAttribute('cy', '21'); track.setAttribute('r', '15.915');
-    track.setAttribute('fill', 'none'); track.setAttribute('stroke-width', '6');
+    track.setAttribute('fill', 'none'); track.setAttribute('stroke-width', '7.5');
     track.style.stroke = 'var(--line)';
     svg.appendChild(track);
 
@@ -736,7 +740,7 @@
 
       const seg = document.createElementNS(ns, 'circle');
       seg.setAttribute('cx', '21'); seg.setAttribute('cy', '21'); seg.setAttribute('r', '15.915');
-      seg.setAttribute('fill', 'none'); seg.setAttribute('stroke-width', '6');
+      seg.setAttribute('fill', 'none'); seg.setAttribute('stroke-width', '7.5');
       seg.setAttribute('stroke-dasharray', pct + ' ' + (100 - pct));
       seg.setAttribute('stroke-dashoffset', String(100 - cumulative));
       seg.setAttribute('transform', 'rotate(-90 21 21)');
@@ -763,7 +767,7 @@
     const scores = items.slice(0, 20).map(i => Number(i.score) || 0).reverse();
     if (scores.length < 2) return;
 
-    const w = 300, h = 60, pad = 4;
+    const w = 300, h = 80, pad = 6;
     const stepX = (w - pad * 2) / (scores.length - 1);
     const toY = s => h - pad - (Math.max(0, Math.min(100, s)) / 100) * (h - pad * 2);
     const ns = 'http://www.w3.org/2000/svg';
@@ -785,21 +789,22 @@
     const area = document.createElementNS(ns, 'path');
     area.setAttribute('d', areaPath);
     area.style.fill = 'var(--amber)';
-    area.style.opacity = '0.08';
+    area.style.opacity = '0.14';
     svg.appendChild(area);
 
     const polyline = document.createElementNS(ns, 'polyline');
     polyline.setAttribute('points', points);
     polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke-linejoin', 'round');
     polyline.style.stroke = 'var(--amber)';
-    polyline.style.strokeWidth = '2';
+    polyline.style.strokeWidth = '3';
     svg.appendChild(polyline);
 
     const [lastX, lastY] = pointCoords[pointCoords.length - 1];
     const last = document.createElementNS(ns, 'circle');
     last.setAttribute('cx', lastX);
     last.setAttribute('cy', lastY);
-    last.setAttribute('r', 3);
+    last.setAttribute('r', 4.5);
     last.style.fill = 'var(--amber)';
     svg.appendChild(last);
 
@@ -808,8 +813,8 @@
     label.setAttribute('x', Math.min(lastX, w - pad - 16));
     label.setAttribute('y', Math.max(9, lastY - 6));
     label.setAttribute('font-family', 'ui-monospace, Consolas, monospace');
-    label.setAttribute('font-size', '9');
-    label.setAttribute('font-weight', '700');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('font-weight', '800');
     label.style.fill = 'var(--amber-ink)';
     label.textContent = String(scores[scores.length - 1]);
     svg.appendChild(label);
