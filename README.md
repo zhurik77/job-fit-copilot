@@ -1,5 +1,10 @@
 # Job Fit Copilot
 
+![License: MIT](https://img.shields.io/badge/license-MIT-4A7FD4)
+![Manifest V3](https://img.shields.io/badge/manifest-v3-F2A33C)
+![Backend: none](https://img.shields.io/badge/backend-none-3E9B5F)
+![Providers](https://img.shields.io/badge/providers-NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Anthropic-8A8378)
+
 Браузерное расширение (Chrome/Edge, Manifest V3) для соискателей: на странице
 вакансии hh.ru / LinkedIn / Upwork показывает в боковой панели, стоит ли
 откликаться, — не просто «% совпадения», а прозрачный разбор по факторам
@@ -21,6 +26,18 @@
 видно ровно то, что решило вердикт, а не чёрный ящик. Плюс: ноль бэкенда —
 твой резюме и API-ключ не проходят через сторонний сервер, только напрямую
 в API выбранного провайдера.
+
+Пример реального разбора (индекс = 50 + сумма факторов):
+
+| Фактор | Δ |
+|---|---:|
+| базовый уровень | 50 |
+| Стек совпадает: Python, REST API | +18 |
+| Домен: автоматизация процессов | +12 |
+| n8n/Zapier — прямое попадание | +8 |
+| Нет опыта с Kubernetes | −10 |
+| Просят английский C1, у кандидата B2 | −4 |
+| **индекс** | **74** |
 
 ## Возможности
 
@@ -102,6 +119,19 @@ tools/preview.html       # статичный предпросмотр пане�
 без бэкенда, без аналитики, без телеметрии. Профиль, ключи и история — только
 в `chrome.storage.local` этого браузера. Исходники открыты — можно проверить
 самому, а не верить на слово.
+
+```mermaid
+flowchart LR
+    Tab["Вкладка: вакансия / резюме"] -->|content script читает DOM| Panel["Side Panel"]
+    Panel <-->|chrome.storage.local| Store[("Профили · Ключи · История")]
+    Panel -->|один HTTPS-запрос, свой ключ| Provider{"Выбранный провайдер"}
+    Provider --> NIM["NVIDIA NIM"]
+    Provider --> OpenAI["OpenAI"]
+    Provider --> Anthropic["Anthropic"]
+```
+
+Никакого промежуточного сервера между панелью и провайдером — только то, что
+на схеме.
 
 ## Вклад в проект
 
