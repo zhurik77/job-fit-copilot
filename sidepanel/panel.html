@@ -105,6 +105,23 @@
         <select id="profile-select"></select>
         <button class="cta ghost" id="btn-import-resume" hidden>Импортировать резюме с этой страницы</button>
         <div class="meta" id="profile-import-status"></div>
+
+        <div id="profile-structured" hidden>
+          <div class="rs-head">
+            <div class="rs-title" id="rs-title"></div>
+            <div class="rs-salary" id="rs-salary"></div>
+          </div>
+          <div class="block-title" id="rs-experience-title">Опыт работы</div>
+          <div id="rs-experience"></div>
+          <div class="block-title" id="rs-skills-title">Навыки</div>
+          <div class="rs-skills" id="rs-skills"></div>
+          <div class="block-title" id="rs-education-title">Образование</div>
+          <div id="rs-education"></div>
+          <div class="block-title" id="rs-about-title">О себе</div>
+          <p class="reasoning" id="rs-about"></p>
+        </div>
+
+        <div class="block-title">Текст профиля (отправляется модели)</div>
         <textarea id="profile-text" rows="6" placeholder="Опиши свой опыт и целевые роли..."></textarea>
         <button class="cta ghost" id="btn-save-profile">Сохранить профиль</button>
 
@@ -155,6 +172,8 @@
             <div class="tile-label">средний индекс</div>
           </div>
         </div>
+
+        <div class="an-best" id="an-best" hidden></div>
         <div class="an-donut-row" id="an-donut-row">
           <div class="donut-wrap-outer">
             <svg id="an-donut" width="84" height="84" viewBox="0 0 42 42"></svg>
@@ -163,6 +182,11 @@
           <div class="donut-legend" id="an-donut-legend"></div>
         </div>
         <div class="an-breakdown" id="an-sources"></div>
+
+        <div class="block-title">Распределение по диапазонам</div>
+        <div id="an-histogram"></div>
+
+        <div class="block-title">Тренд индекса</div>
         <div class="an-sparkline-wrap">
           <svg id="an-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
         </div>

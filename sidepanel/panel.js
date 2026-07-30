@@ -147,6 +147,7 @@
     renderProfileSelect();
     const active = profilesCache.find(p => p.id === activeProfileIdCache);
     $('profile-text').value = (active && active.text) || DEFAULT_PROFILE;
+    renderProfileStructuredView(active);
   }
 
   $('profile-select').addEventListener('change', async (e) => {
@@ -155,6 +156,7 @@
     const active = profilesCache.find(p => p.id === activeProfileIdCache);
     $('profile-text').value = (active && active.text) || '';
     $('profile-import-status').textContent = '';
+    renderProfileStructuredView(active);
   });
 
   $('btn-save-profile').addEventListener('click', async () => {
@@ -166,6 +168,70 @@
     }
     flashButton($('btn-save-profile'), 'Сохранено ✓');
   });
+
+  // Карточный просмотр структурных данных резюме (когда профиль импортирован
+  // с hh.ru) поверх голого текста в textarea — опыт отдельными блоками,
+  // навыки чипами, а не одной простынёй.
+  function renderProfileStructuredView(profile) {
+    const el = $('profile-structured');
+    const s = profile && profile.structured;
+    if (!s) { el.hidden = true; return; }
+    el.hidden = false;
+
+    $('rs-title').textContent = s.title || '';
+    $('rs-salary').textContent = s.salary || '';
+
+    const expWrap = $('rs-experience');
+    expWrap.textContent = '';
+    const hasExp = Array.isArray(s.experience) && s.experience.length > 0;
+    $('rs-experience-title').hidden = !hasExp;
+    if (hasExp) {
+      s.experience.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'rs-exp-item';
+        if (e.company) {
+          const co = document.createElement('div');
+          co.className = 'rs-exp-company';
+          co.textContent = e.company;
+          item.appendChild(co);
+        }
+        const body = document.createElement('div');
+        body.className = 'rs-exp-body';
+        body.textContent = e.text || '';
+        item.appendChild(body);
+        expWrap.appendChild(item);
+      });
+    }
+
+    const skillsWrap = $('rs-skills');
+    skillsWrap.textContent = '';
+    const hasSkills = Array.isArray(s.skills) && s.skills.length > 0;
+    $('rs-skills-title').hidden = !hasSkills;
+    if (hasSkills) {
+      s.skills.forEach(sk => {
+        const chip = document.createElement('span');
+        chip.className = 'chip chip-mini';
+        chip.textContent = sk;
+        skillsWrap.appendChild(chip);
+      });
+    }
+
+    const eduWrap = $('rs-education');
+    eduWrap.textContent = '';
+    const hasEdu = Array.isArray(s.education) && s.education.length > 0;
+    $('rs-education-title').hidden = !hasEdu;
+    if (hasEdu) {
+      s.education.forEach(ed => {
+        const item = document.createElement('div');
+        item.className = 'rs-edu-item';
+        item.textContent = '— ' + ed;
+        eduWrap.appendChild(item);
+      });
+    }
+
+    $('rs-about-title').hidden = !s.about;
+    $('rs-about').textContent = s.about || '';
+  }
 
   // ---------- импорт резюме с hh.ru ----------
 
@@ -228,12 +294,17 @@
       profilesCache.push(target);
     }
     target.text = resume.text;
+    target.structured = {
+      title: resume.title, salary: resume.salary, experience: resume.experience,
+      education: resume.education, skills: resume.skills, about: resume.about
+    };
     target.updatedAt = Date.now();
     activeProfileIdCache = target.id;
 
     await chrome.storage.local.set({ profiles: profilesCache, activeProfileId: activeProfileIdCache });
     renderProfileSelect();
     $('profile-text').value = target.text;
+    renderProfileStructuredView(target);
 
     statusEl.textContent = 'Импортировано: ' + (resume.experience ? resume.experience.length : 0) +
       ' мест работы, ' + (resume.skills ? resume.skills.length : 0) + ' навыков, обновлено ' +
@@ -388,14 +459,17 @@
         return;
       }
       const score = computeScore(resp.result);
-      renderResult(resp.result, score);
+      const id = renderResult(resp.result, score);
       await saveToHistory({
+        id,
         title: resp.result.title || currentVacancy.title || 'Вакансия',
         source: currentVacancy.source || '',
         url: currentVacancy.url || '',
         verdict: resp.result.verdict,
         score,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        vacancy: { ...currentVacancy, description },
+        result: resp.result
       });
     } catch (e) {
       showError('Не получилось проанализировать. Проверь подключение и попробуй ещё раз.');
@@ -406,11 +480,11 @@
     }
   });
 
-  function renderResult(parsed, score) {
+  function renderResult(parsed, score, existingId) {
     const verdict = VERDICTS.includes(parsed.verdict) ? parsed.verdict : 'С ОГОВОРКАМИ';
     const kind = verdictKind(verdict);
 
-    const id = makeCheckId();
+    const id = existingId || makeCheckId();
     $('check-id').textContent = '#' + id;
     $('result-id').textContent = '#' + id;
 
@@ -441,6 +515,7 @@
 
     $('letter-block').hidden = true;
     resultEl.hidden = false;
+    return id;
   }
 
   function renderLedger(ledger, total) {
@@ -639,9 +714,15 @@
       const side = document.createElement('span');
       side.className = 'history-side';
 
-      const chip = document.createElement('span');
+      const hasDetail = !!it.result;
+      const chip = document.createElement(hasDetail ? 'button' : 'span');
       chip.className = 'chip chip-mini chip-' + verdictKind(it.verdict);
       chip.textContent = it.verdict || '—';
+      if (hasDetail) {
+        chip.type = 'button';
+        chip.title = 'Открыть полный разбор';
+        chip.addEventListener('click', () => openHistoryEntry(it));
+      }
 
       const score = document.createElement('span');
       score.className = 'history-score';
@@ -654,6 +735,20 @@
       row.appendChild(side);
       historyEl.appendChild(row);
     }
+  }
+
+  // Открывает полный разбор прошлой проверки во вкладке «Проверка» — работает
+  // только для записей, сохранённых после введения result/vacancy в историю.
+  function openHistoryEntry(entry) {
+    if (!entry.result) return;
+    if (entry.vacancy) {
+      currentVacancy = entry.vacancy;
+      vacancyTextarea.value = entry.vacancy.description || '';
+      renderVacancyMeta(entry.vacancy);
+    }
+    clearError();
+    renderResult(entry.result, entry.score, entry.id);
+    activateTab('check');
   }
 
   // Строки истории не хранят id — дата проверки (миллисекунды) достаточно
@@ -677,6 +772,8 @@
     $('an-applied').textContent = total ? applied + ' (' + Math.round(applied / total * 100) + '%)' : '—';
     $('an-avg').textContent = total ? avg : '—';
 
+    renderBestResult(items);
+
     const verdictCounts = {};
     items.forEach(i => { const v = i.verdict || '—'; verdictCounts[v] = (verdictCounts[v] || 0) + 1; });
     renderVerdictDonut(verdictCounts, total);
@@ -692,7 +789,98 @@
       sWrap.appendChild(chip);
     });
 
+    renderHistogram(items);
     renderSparkline(items);
+  }
+
+  // Самый высокий индекс за всё время — кликабелен (открывает полный разбор),
+  // если для этой записи сохранён result (старые записи без него — просто инфо).
+  function renderBestResult(items) {
+    const el = $('an-best');
+    if (!items.length) {
+      el.hidden = true;
+      el.replaceChildren();
+      el.onclick = null;
+      el.onkeydown = null;
+      return;
+    }
+    const best = items.reduce((a, b) => (Number(b.score) || 0) > (Number(a.score) || 0) ? b : a);
+    el.hidden = false;
+    el.replaceChildren();
+
+    const text = document.createElement('div');
+    text.className = 'an-best-text';
+    const label = document.createElement('div');
+    label.className = 'an-best-label';
+    label.textContent = 'лучший результат';
+    const title = document.createElement('div');
+    title.className = 'an-best-title';
+    title.textContent = (sourceLabel(best.source) ? sourceLabel(best.source) + ' · ' : '') + (best.title || 'Вакансия');
+    text.appendChild(label);
+    text.appendChild(title);
+
+    const score = document.createElement('div');
+    score.className = 'an-best-score';
+    score.textContent = best.score ?? '—';
+
+    el.appendChild(text);
+    el.appendChild(score);
+
+    if (best.result) {
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.title = 'Открыть полный разбор';
+      el.onclick = () => openHistoryEntry(best);
+      el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHistoryEntry(best); } };
+    } else {
+      el.removeAttribute('role');
+      el.removeAttribute('tabindex');
+      el.title = '';
+      el.onclick = null;
+      el.onkeydown = null;
+    }
+  }
+
+  // Гистограмма по диапазонам индекса — в отличие от текста ledger-факторов
+  // (уникален для каждой вакансии), score есть у всех записей, включая старые.
+  const HISTOGRAM_BUCKETS = [
+    { label: '0–20', min: 0, max: 20 },
+    { label: '21–40', min: 21, max: 40 },
+    { label: '41–60', min: 41, max: 60 },
+    { label: '61–80', min: 61, max: 80 },
+    { label: '81–100', min: 81, max: 100 }
+  ];
+  function renderHistogram(items) {
+    const wrap = $('an-histogram');
+    wrap.textContent = '';
+    if (!items.length) return;
+
+    const counts = HISTOGRAM_BUCKETS.map(b => items.filter(i => {
+      const s = Number(i.score) || 0;
+      return s >= b.min && s <= b.max;
+    }).length);
+    const maxCount = Math.max(...counts, 1);
+
+    HISTOGRAM_BUCKETS.forEach((b, idx) => {
+      const row = document.createElement('div');
+      row.className = 'hist-row';
+
+      const label = document.createElement('span');
+      label.className = 'hist-label';
+      label.textContent = b.label;
+
+      const track = document.createElement('div');
+      track.className = 'hist-track';
+      const fill = document.createElement('div');
+      fill.className = 'hist-fill';
+      fill.style.width = (counts[idx] ? Math.max(14, counts[idx] / maxCount * 100) : 0) + '%';
+      fill.textContent = counts[idx] || '';
+      track.appendChild(fill);
+
+      row.appendChild(label);
+      row.appendChild(track);
+      wrap.appendChild(row);
+    });
   }
 
   // Донат вердиктов без внешних библиотек: круг с трекером + один <circle>
