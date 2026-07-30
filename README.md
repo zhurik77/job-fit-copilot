@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — разбор совпадения вакансии по факторам вместо голого процента">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.svg">
+    <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — разбор совпадения вакансии по факторам вместо голого процента">
+  </picture>
 </p>
 
 <p align="center">
@@ -16,7 +19,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/features.svg" width="100%" alt="Разбор по факторам · несколько резюме · аналитика откликов · ноль бэкенда">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/features-dark.svg">
+    <img src="docs/features.svg" width="100%" alt="Разбор по факторам · несколько резюме · аналитика откликов · ноль бэкенда">
+  </picture>
 </p>
 
 ---

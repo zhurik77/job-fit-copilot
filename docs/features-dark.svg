@@ -1,0 +1,39 @@
+<svg width="900" height="130" viewBox="0 0 900 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Четыре ключевые возможности: разбор по факторам, несколько резюме, аналитика откликов, работа без бэкенда">
+  <defs>
+    <clipPath id="fsd-round"><rect x="0" y="0" width="900" height="130" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#fsd-round)">
+    <rect x="0" y="0" width="900" height="130" fill="#211D17" stroke="#34302A"/>
+    <line x1="225" y1="20" x2="225" y2="110" stroke="#34302A"/>
+    <line x1="450" y1="20" x2="450" y2="110" stroke="#34302A"/>
+    <line x1="675" y1="20" x2="675" y2="110" stroke="#34302A"/>
+
+    <g transform="translate(30,28)">
+      <rect x="0" y="0" width="34" height="9" rx="3" fill="#6FC98C"/>
+      <rect x="0" y="13" width="20" height="9" rx="3" fill="#E68276"/>
+      <rect x="0" y="26" width="27" height="9" rx="3" fill="#6FC98C"/>
+      <text x="0" y="58" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#F3EEE4">Разбор по факторам</text>
+      <text x="0" y="76" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#A39A8A">Не голый % совпадения</text>
+    </g>
+
+    <g transform="translate(255,28)">
+      <rect x="6" y="4" width="26" height="34" rx="4" fill="#211D17" stroke="#7FA5E8" stroke-width="2"/>
+      <rect x="0" y="0" width="26" height="34" rx="4" fill="#1D2A42" stroke="#7FA5E8" stroke-width="2"/>
+      <text x="0" y="58" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#F3EEE4">Несколько резюме</text>
+      <text x="0" y="76" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#A39A8A">Импорт с hh.ru в клик</text>
+    </g>
+
+    <g transform="translate(480,28)">
+      <circle cx="17" cy="17" r="15" fill="none" stroke="#34302A" stroke-width="6"/>
+      <circle cx="17" cy="17" r="15" fill="none" stroke="#F2A33C" stroke-width="6" stroke-dasharray="55 45" transform="rotate(-90 17 17)"/>
+      <text x="0" y="58" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#F3EEE4">Аналитика откликов</text>
+      <text x="0" y="76" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#A39A8A">История, тренд, вердикты</text>
+    </g>
+
+    <g transform="translate(705,28)">
+      <path d="M17 0 L32 6 V17 C32 27 25 34 17 37 C9 34 2 27 2 17 V6 Z" fill="none" stroke="#6FC98C" stroke-width="2.4" stroke-linejoin="round"/>
+      <text x="0" y="58" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#F3EEE4">Ноль бэкенда</text>
+      <text x="0" y="76" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#A39A8A">Ключ только у провайдера</text>
+    </g>
+  </g>
+</svg>

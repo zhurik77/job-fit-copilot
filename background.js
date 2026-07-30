@@ -102,11 +102,12 @@ async function callProvider(system, user, maxTokens) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const message = (data && data.error && (data.error.message || data.error)) || ('HTTP ' + res.status);
-    // 429/529 или текст вида "ResourceExhausted"/"rate limit"/"overloaded" —
-    // провайдер перегружен (429 у большинства, 529 — код Anthropic для
-    // overloaded_error), а не ошибка ключа/запроса. Отдаём отдельный код,
-    // чтобы панель могла сама повторить запрос вместо немедленного отказа.
-    const isRateLimit = res.status === 429 || res.status === 529 ||
+    // 429/502/503/504/529 или текст вида "ResourceExhausted"/"rate limit"/
+    // "overloaded" — временная перегрузка провайдера или шлюза перед ним
+    // (502/503/504 — Bad Gateway/Unavailable/Gateway Timeout, 529 — код
+    // Anthropic для overloaded_error), а не ошибка ключа/запроса. Отдаём
+    // отдельный код, чтобы панель могла сама повторить запрос.
+    const isRateLimit = [429, 502, 503, 504, 529].includes(res.status) ||
       /resourceexhausted|rate.?limit|overloaded/i.test(String(message));
     return { ok: false, code: isRateLimit ? 'RATE_LIMIT' : 'API', message };
   }
