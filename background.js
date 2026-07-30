@@ -148,9 +148,14 @@ function formatVacancy(v) {
   return head.join('\n') + '\n\n' + (v.description || '');
 }
 
+// 2500/1200 вместо прежних 1000/600: у deepseek/glm включён режим рассуждений
+// (chat_template_kwargs.thinking, reasoning_effort — см. extraParamsFor), и
+// reasoning-токены расходуются из того же бюджета max_tokens, что и финальный
+// ответ. При старом лимите модель нередко успевала "подумать", но не
+// дописывала JSON/письмо до конца — это и давало PARSE_ERROR.
 async function analyzeFit(vacancy, profile) {
   const user = 'Профиль кандидата:\n' + profile + '\n\nВакансия:\n' + formatVacancy(vacancy);
-  const res = await callProvider(JFC.FIT_CHECK_SYSTEM_PROMPT, user, 1000);
+  const res = await callProvider(JFC.FIT_CHECK_SYSTEM_PROMPT, user, 2500);
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();
@@ -164,14 +169,14 @@ async function writeLetter(vacancy, profile, sellingPoints, lang) {
   const user = 'Профиль кандидата:\n' + profile +
     '\n\nСильные стороны для этой вакансии: ' + (sellingPoints || '—') +
     '\n\nВакансия:\n' + formatVacancy(vacancy);
-  const res = await callProvider(system, user, 600);
+  const res = await callProvider(system, user, 1200);
   if (!res.ok) return res;
   return { ok: true, result: extractText(res) };
 }
 
 async function reviewResume(profile) {
   const user = 'Резюме кандидата:\n' + profile;
-  const res = await callProvider(JFC.RESUME_REVIEW_SYSTEM_PROMPT, user, 1000);
+  const res = await callProvider(JFC.RESUME_REVIEW_SYSTEM_PROMPT, user, 2500);
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();

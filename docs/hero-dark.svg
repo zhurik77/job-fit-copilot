@@ -10,7 +10,7 @@
     <circle cx="20" cy="19" r="4" fill="#E0645B"/>
     <circle cx="36" cy="19" r="4" fill="#E5B45A"/>
     <circle cx="52" cy="19" r="4" fill="#58B368"/>
-    <text x="76" y="24" font-family="ui-monospace, 'SFMono-Regular', Consolas, monospace" font-size="12" fill="#A39A8A">macuniverse.app / jfc / <tspan fill="#F2A33C">job-fit-copilot</tspan></text>
+    <text x="76" y="24" font-family="ui-monospace, 'SFMono-Regular', Consolas, monospace" font-size="12" fill="#A39A8A">macuniverse.app / jfc / <tspan fill="#F2A33C">jobfitcopilot</tspan></text>
 
     <!-- pill-табы, как в самой панели -->
     <rect x="40" y="44" width="196" height="22" rx="11" fill="#F2A33C"/>

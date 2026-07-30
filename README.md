@@ -1,8 +1,15 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.svg">
-    <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — разбор совпадения вакансии по факторам вместо голого процента">
+    <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — AI-расширение для Chrome: разбор совпадения вакансии по факторам вместо голого процента">
   </picture>
+</p>
+
+<h1 align="center">Job Fit Copilot</h1>
+<p align="center">
+  <b>AI-помощник соискателя для Chrome и Edge</b> — прозрачный разбор совпадения вакансии по факторам,
+  готовые к отправке сопроводительные письма и аналитика откликов.<br>
+  hh.ru · LinkedIn · Upwork · DeepSeek / GLM / GPT / Claude — свой ключ, без бэкенда.
 </p>
 
 <p align="center">
@@ -10,12 +17,16 @@
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
   <img src="https://img.shields.io/badge/backend-none-3E9B5F" alt="Backend: none">
   <img src="https://img.shields.io/badge/providers-NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Anthropic-8A8378" alt="Providers">
-  <a href="https://github.com/zhurik77/job-fit-copilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/job-fit-copilot?color=F2A33C&label=скачать" alt="Скачать последний релиз"></a>
+  <a href="https://github.com/zhurik77/jobfitcopilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/jobfitcopilot?color=F2A33C&label=скачать" alt="Скачать последний релиз"></a>
 </p>
 
 <p align="center">
-  Расширение для Chrome/Edge: за секунды показывает, стоит ли откликаться на вакансию —
-  с прозрачным разбором по факторам, а не голым «% совпадения».
+  <a href="#зачем">Зачем</a> ·
+  <a href="#возможности">Возможности</a> ·
+  <a href="#чем-отличается">Чем отличается</a> ·
+  <a href="#быстрый-старт">Быстрый старт</a> ·
+  <a href="#приватность-и-архитектура">Приватность</a> ·
+  <a href="#вклад-в-проект">Донат</a>
 </p>
 
 <p align="center">
@@ -55,18 +66,33 @@ Teal, Jobscan, Huntr, Careerflow — у всех один и тот же чёр�
 | **Несколько резюме** | Именованные профили, импорт с hh.ru в один клик прямо со страницы резюме |
 | **Оценка резюме** | Отдельно от вакансии — качество самого резюме, до отклика |
 | **Аналитика откликов** | История с отметкой «откликнулся», донат по вердиктам, тренд индекса |
-| **4 провайдера** | DeepSeek V4 Flash / GLM-5.2 (NVIDIA NIM), OpenAI, Anthropic — свой ключ, авто-повтор при rate limit |
+| **4 провайдера** | DeepSeek V4 Flash / GLM-5.2 (NVIDIA NIM), OpenAI, Anthropic — свой ключ, авто-повтор при перегрузке |
 
 Расширение читает только DOM текущей вкладки: без фонового парсинга списков
 вакансий, без авто-откликов, без обхода авторизации площадок. Отправка отклика
 — всегда вручную, на самой площадке.
 
+## Чем отличается
+
+| | Job Fit Copilot | Teal / Jobscan / Huntr / Careerflow |
+|---|---|---|
+| Индекс совпадения | Прозрачный ledger: база 50 + дельта и объяснение по каждому фактору | Один % без разбивки причин |
+| Хранение данных | Только `chrome.storage.local` этого браузера | Аккаунт в облаке сервиса |
+| Бэкенд | Нет — прямой запрос к выбранному AI-провайдеру своим ключом | Есть — обработка на их серверах |
+| Модель | На выбор: DeepSeek / GLM / GPT / Claude, свой API-ключ | Фиксированная, зашита в подписку |
+| Автоотклики | Нет — только чтение текущей вкладки, отправка вручную на площадке | У части сервисов есть авто-рассылка откликов |
+| Стоимость | Бесплатно и open source, платишь только за токены своему провайдеру | Платная подписка |
+
 ## Быстрый старт
 
-1. **Установка.** Скачать [последний релиз](https://github.com/zhurik77/job-fit-copilot/releases/latest)
-   (`.zip`) и распаковать, или сделать `git clone`. Затем `chrome://extensions`
-   (или `edge://extensions`) → включить «Режим разработчика» → «Загрузить
-   распакованное расширение» → выбрать папку `job-fit-copilot/`.
+1. **Установка.** Скачать [последний релиз](https://github.com/zhurik77/jobfitcopilot/releases/latest)
+   (`.zip`) и распаковать, или:
+   ```bash
+   git clone https://github.com/zhurik77/jobfitcopilot.git
+   ```
+   Затем `chrome://extensions` (или `edge://extensions`) → включить «Режим
+   разработчика» → «Загрузить распакованное расширение» → выбрать папку
+   `jobfitcopilot/`.
 2. **Ключ.** Получить у нужного провайдера — [NVIDIA NIM](https://build.nvidia.com/),
    [OpenAI](https://platform.openai.com/api-keys) или
    [Anthropic](https://console.anthropic.com/settings/keys) — нужен только ключ
@@ -114,7 +140,7 @@ sidepanel/              UI панели (тёплая светлая тема)
 options/                настройки: ключи, модель, профиль, язык писем
 icons/                  генерируются: python tools/make_icons.py
 tools/preview.html      статичный предпросмотр панели (без браузерных API)
-docs/hero.svg           баннер README
+docs/hero.svg           баннер README (+ hero-dark.svg для тёмной темы)
 ```
 
 ## Заметки
@@ -133,6 +159,12 @@ Issues и PR приветствуются — особенно по актуал
 
 Если проект оказался полезен — можно поставить звезду репозиторию или
 [поддержать донатом](https://www.tbank.ru/cf/1cYvs7KjikV).
+
+<sub>
+  <a href="https://star-history.com/#zhurik77/jobfitcopilot&Date">
+    <img src="https://api.star-history.com/svg?repos=zhurik77/jobfitcopilot&type=Date" width="100%" alt="История звёзд репозитория">
+  </a>
+</sub>
 
 ## Лицензия
 

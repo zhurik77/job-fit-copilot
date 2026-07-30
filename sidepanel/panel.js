@@ -38,21 +38,29 @@
   }
 
   // Отправка сообщения background.js с повтором при RATE_LIMIT (перегружен провайдер
-  // выбранной модели) и текстовым статусом хода выполнения в labelEl.
-  const RETRY_DELAYS_MS = [3000, 8000, 20000];
+  // выбранной модели) или PARSE_ERROR (модель обрезала/сломала JSON — часто
+  // случайность, следующая попытка обычно проходит) и текстовым статусом
+  // хода выполнения в labelEl.
+  const RETRY_PLAN = {
+    RATE_LIMIT: { delays: [3000, 8000, 20000], label: 'Лимит провайдера занят' },
+    PARSE_ERROR: { delays: [1500, 4000], label: 'Модель вернула кривой ответ' }
+  };
   async function sendWithRetry(msg, labelEl, baseLabel) {
-    for (let attempt = 1; attempt <= RETRY_DELAYS_MS.length + 1; attempt++) {
+    let plan = null;
+    for (let attempt = 1; ; attempt++) {
       if (labelEl) {
-        labelEl.textContent = attempt === 1 ? baseLabel : baseLabel + ` (попытка ${attempt}/${RETRY_DELAYS_MS.length + 1})`;
+        labelEl.textContent = (attempt === 1 || !plan)
+          ? baseLabel
+          : baseLabel + ` (попытка ${attempt}/${1 + plan.delays.length})`;
       }
       const resp = await chrome.runtime.sendMessage(msg);
-      const isLastAttempt = attempt === RETRY_DELAYS_MS.length + 1;
-      if (!resp || resp.ok || resp.code !== 'RATE_LIMIT' || isLastAttempt) return resp;
+      plan = resp && !resp.ok ? RETRY_PLAN[resp.code] : null;
+      if (!plan || attempt > plan.delays.length) return resp;
 
-      const waitMs = RETRY_DELAYS_MS[attempt - 1];
+      const waitMs = plan.delays[attempt - 1];
       for (let leftMs = waitMs; leftMs > 0; leftMs -= 1000) {
         if (labelEl) {
-          labelEl.textContent = `Лимит провайдера занят, повтор через ${Math.ceil(leftMs / 1000)} с… (попытка ${attempt}/${RETRY_DELAYS_MS.length + 1})`;
+          labelEl.textContent = `${plan.label}, повтор через ${Math.ceil(leftMs / 1000)} с… (попытка ${attempt + 1}/${1 + plan.delays.length})`;
         }
         await sleep(1000);
       }
@@ -371,7 +379,7 @@
       if (!resp) throw new Error('empty response');
       if (!resp.ok) {
         if (resp.code === 'NO_API_KEY') { showError('Не указан API-ключ для модели «' +resp.message + '». Добавь его в настройках — без ключа запросы не отправляются.'); openSettingsBtn.hidden = false; return; }
-        if (resp.code === 'PARSE_ERROR') { showError('Модель вернула неожиданный формат ответа. Попробуй ещё раз.'); return; }
+        if (resp.code === 'PARSE_ERROR') { showError('Модель несколько раз подряд вернула повреждённый ответ. Попробуй ещё раз или переключи модель в настройках.'); openSettingsBtn.hidden = false; return; }
         if (resp.code === 'RATE_LIMIT') { showError('Провайдер перегружен для этой модели даже после повторов. Попробуй позже или переключи модель в настройках.'); openSettingsBtn.hidden = false; return; }
         showError('Ошибка API: ' + (resp.message || 'неизвестная'));
         return;
@@ -490,7 +498,7 @@
       if (!resp) throw new Error('empty response');
       if (!resp.ok) {
         if (resp.code === 'NO_API_KEY') { showError('Не указан API-ключ для модели «' +resp.message + '». Добавь его в настройках — без ключа запросы не отправляются.'); openSettingsBtn.hidden = false; return; }
-        if (resp.code === 'PARSE_ERROR') { showError('Модель вернула неожиданный формат ответа. Попробуй ещё раз.'); return; }
+        if (resp.code === 'PARSE_ERROR') { showError('Модель несколько раз подряд вернула повреждённый ответ. Попробуй ещё раз или переключи модель в настройках.'); openSettingsBtn.hidden = false; return; }
         if (resp.code === 'RATE_LIMIT') { showError('Провайдер перегружен для этой модели даже после повторов. Попробуй позже или переключи модель в настройках.'); openSettingsBtn.hidden = false; return; }
         showError('Ошибка API: ' + (resp.message || 'неизвестная'));
         return;
