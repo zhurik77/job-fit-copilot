@@ -7,11 +7,16 @@
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
   <img src="https://img.shields.io/badge/backend-none-3E9B5F" alt="Backend: none">
   <img src="https://img.shields.io/badge/providers-NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Anthropic-8A8378" alt="Providers">
+  <a href="https://github.com/zhurik77/job-fit-copilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/job-fit-copilot?color=F2A33C&label=скачать" alt="Скачать последний релиз"></a>
 </p>
 
 <p align="center">
   Расширение для Chrome/Edge: за секунды показывает, стоит ли откликаться на вакансию —
   с прозрачным разбором по факторам, а не голым «% совпадения».
+</p>
+
+<p align="center">
+  <img src="docs/features.svg" width="100%" alt="Разбор по факторам · несколько резюме · аналитика откликов · ноль бэкенда">
 </p>
 
 ---
@@ -52,9 +57,10 @@ Teal, Jobscan, Huntr, Careerflow — у всех один и тот же чёр�
 
 ## Быстрый старт
 
-1. **Установка.** `chrome://extensions` (или `edge://extensions`) → включить
-   «Режим разработчика» → «Загрузить распакованное расширение» → выбрать эту
-   папку.
+1. **Установка.** Скачать [последний релиз](https://github.com/zhurik77/job-fit-copilot/releases/latest)
+   (`.zip`) и распаковать, или сделать `git clone`. Затем `chrome://extensions`
+   (или `edge://extensions`) → включить «Режим разработчика» → «Загрузить
+   распакованное расширение» → выбрать папку `job-fit-copilot/`.
 2. **Ключ.** Получить у нужного провайдера — [NVIDIA NIM](https://build.nvidia.com/),
    [OpenAI](https://platform.openai.com/api-keys) или
    [Anthropic](https://console.anthropic.com/settings/keys) — нужен только ключ
