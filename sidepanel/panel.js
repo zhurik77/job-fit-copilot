@@ -172,9 +172,46 @@
   // Карточный просмотр структурных данных резюме (когда профиль импортирован
   // с hh.ru) поверх голого текста в textarea — опыт отдельными блоками,
   // навыки чипами, а не одной простынёй.
+  // Профили, импортированные до появления поля structured, его не имеют —
+  // восстанавливаем структуру из уже сохранённого текста по тем же маркерам,
+  // которыми его собрал extractor-hh-resume.js (formatResumeText), без
+  // повторного похода на hh.ru.
+  function parseImportedText(text) {
+    if (!text) return null;
+    const sections = text.split(/\n\n(?=Опыт работы:|Навыки:|Образование:|О себе:)/);
+    const firstLine = (sections[0] || '').split('\n')[0] || '';
+    const dashIdx = firstLine.lastIndexOf(' — ');
+    const result = {
+      title: dashIdx > -1 ? firstLine.slice(0, dashIdx) : firstLine,
+      salary: dashIdx > -1 ? firstLine.slice(dashIdx + 3) : '',
+      experience: [], education: [], skills: [], about: ''
+    };
+
+    for (const sec of sections.slice(1)) {
+      if (sec.startsWith('Опыт работы:')) {
+        const body = sec.replace(/^Опыт работы:\n\n/, '');
+        result.experience = body.split('\n\n---\n\n').map(block => {
+          const lines = block.split('\n');
+          return { company: lines[0] || '', text: lines.slice(1).join('\n').trim() };
+        });
+      } else if (sec.startsWith('Навыки:')) {
+        result.skills = sec.replace(/^Навыки:\s*/, '').split(',').map(x => x.trim()).filter(Boolean);
+      } else if (sec.startsWith('Образование:')) {
+        result.education = sec.replace(/^Образование:\n/, '').split('\n')
+          .map(l => l.replace(/^—\s*/, '').trim()).filter(Boolean);
+      } else if (sec.startsWith('О себе:')) {
+        result.about = sec.replace(/^О себе:\n/, '').trim();
+      }
+    }
+    return result;
+  }
+
   function renderProfileStructuredView(profile) {
     const el = $('profile-structured');
-    const s = profile && profile.structured;
+    let s = profile && profile.structured;
+    if (!s && profile && profile.source === 'hh-import') {
+      s = parseImportedText(profile.text);
+    }
     if (!s) { el.hidden = true; return; }
     el.hidden = false;
 
@@ -1020,11 +1057,36 @@
     });
   }
 
+  // ---------- авто-обновление при навигации ----------
+
+  // extractFromActiveTab() сама выходит рано на нерелевантных URL — дешёво
+  // звать её на каждую навигацию. Флаг просто не даёт двум запускам наложиться,
+  // если события придут почти одновременно (например, SPA-переходы на hh.ru).
+  let extractInFlight = false;
+  async function safeExtractFromActiveTab() {
+    if (extractInFlight) return;
+    extractInFlight = true;
+    try {
+      await extractFromActiveTab();
+      await checkResumeImportAvailability();
+    } finally {
+      extractInFlight = false;
+    }
+  }
+
+  if (chrome.tabs && chrome.tabs.onUpdated) {
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status === 'complete' && tab.active) safeExtractFromActiveTab();
+    });
+  }
+  if (chrome.tabs && chrome.tabs.onActivated) {
+    chrome.tabs.onActivated.addListener(() => safeExtractFromActiveTab());
+  }
+
   // ---------- init ----------
 
   initTabs();
   loadProfile();
   loadHistory();
-  extractFromActiveTab();
-  checkResumeImportAvailability();
+  safeExtractFromActiveTab();
 })();

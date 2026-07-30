@@ -102,10 +102,12 @@ async function callProvider(system, user, maxTokens) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const message = (data && data.error && (data.error.message || data.error)) || ('HTTP ' + res.status);
-    // 429 или текст вида "ResourceExhausted"/"rate limit" — провайдер перегружен
-    // (или закончилась квота), а не ошибка ключа/запроса. Отдаём отдельный код,
+    // 429/529 или текст вида "ResourceExhausted"/"rate limit"/"overloaded" —
+    // провайдер перегружен (429 у большинства, 529 — код Anthropic для
+    // overloaded_error), а не ошибка ключа/запроса. Отдаём отдельный код,
     // чтобы панель могла сама повторить запрос вместо немедленного отказа.
-    const isRateLimit = res.status === 429 || /resourceexhausted|rate.?limit/i.test(String(message));
+    const isRateLimit = res.status === 429 || res.status === 529 ||
+      /resourceexhausted|rate.?limit|overloaded/i.test(String(message));
     return { ok: false, code: isRateLimit ? 'RATE_LIMIT' : 'API', message };
   }
   return { ok: true, data, responseStyle: provider.responseStyle };
@@ -118,6 +120,23 @@ function extractText(res) {
   const choice = res.data.choices && res.data.choices[0];
   const content = choice && choice.message && choice.message.content;
   return (content || '').trim();
+}
+
+// Модель иногда добавляет вступление/пояснение вокруг JSON несмотря на прямой
+// запрет в промпте (особенно reasoning-модели) — прежде чем сдаваться,
+// пробуем вытащить первый {...}-блок из текста и распарсить уже его.
+function parseModelJson(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch (e2) { /* тоже не JSON — сдаёмся, вернём null ниже */ }
+    }
+    return null;
+  }
 }
 
 function formatVacancy(v) {
@@ -134,11 +153,9 @@ async function analyzeFit(vacancy, profile) {
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();
-  try {
-    return { ok: true, result: JSON.parse(raw) };
-  } catch (e) {
-    return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
-  }
+  const parsed = parseModelJson(raw);
+  if (parsed) return { ok: true, result: parsed };
+  return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
 }
 
 async function writeLetter(vacancy, profile, sellingPoints, lang) {
@@ -157,9 +174,7 @@ async function reviewResume(profile) {
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();
-  try {
-    return { ok: true, result: JSON.parse(raw) };
-  } catch (e) {
-    return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
-  }
+  const parsed = parseModelJson(raw);
+  if (parsed) return { ok: true, result: parsed };
+  return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
 }
