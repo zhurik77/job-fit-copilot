@@ -1290,7 +1290,7 @@
     svg.appendChild(label);
   }
 
-  // ---------- ATS-разбор ----------
+  // ---------- ATS-разбор и управление сохранёнными резюме ----------
 
   function showAtsError(text) {
     const el = $('ats-error');
@@ -1303,6 +1303,106 @@
   }
 
   const atsVacancyTextarea = $('ats-vacancy-text');
+  let activeAtsResumeId = null;
+
+  async function populateAtsResumeSelect() {
+    const select = $('ats-resume-select');
+    if (!select) return;
+    const { savedResumes, activeResumeId } = await JFC.ensureSavedResumes();
+    activeAtsResumeId = activeResumeId;
+    select.innerHTML = '';
+
+    savedResumes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name;
+      select.appendChild(opt);
+    });
+
+    const newOpt = document.createElement('option');
+    newOpt.value = '+new';
+    newOpt.textContent = '+ Добавить новое резюме...';
+    select.appendChild(newOpt);
+
+    select.value = activeAtsResumeId;
+    select._resumes = savedResumes;
+
+    const currentResume = savedResumes.find(r => r.id === activeAtsResumeId) || savedResumes[0];
+    if (currentResume && $('ats-inline-resume')) {
+      $('ats-inline-resume').value = currentResume.text || '';
+    }
+  }
+
+  if ($('ats-resume-select')) {
+    $('ats-resume-select').addEventListener('change', async (e) => {
+      const select = e.target;
+      const resumes = select._resumes || [];
+      const val = select.value;
+      if (val === '+new') {
+        $('ats-new-resume-box').hidden = false;
+      } else {
+        $('ats-new-resume-box').hidden = true;
+        activeAtsResumeId = val;
+        await chrome.storage.local.set({ activeResumeId: val });
+        const selected = resumes.find(r => r.id === val);
+        if (selected && $('ats-inline-resume')) {
+          $('ats-inline-resume').value = selected.text || '';
+        }
+      }
+    });
+  }
+
+  if ($('btn-toggle-resume-preview')) {
+    $('btn-toggle-resume-preview').addEventListener('click', () => {
+      const box = $('ats-resume-preview-box');
+      if (box) {
+        box.hidden = !box.hidden;
+        $('btn-toggle-resume-preview').textContent = box.hidden
+          ? 'показать/изменить текст резюме ▾'
+          : 'скрыть текст резюме ▴';
+      }
+    });
+  }
+
+  if ($('btn-update-resume-text')) {
+    $('btn-update-resume-text').addEventListener('click', async () => {
+      const text = $('ats-inline-resume').value.trim();
+      const { savedResumes } = await JFC.ensureSavedResumes();
+      const r = savedResumes.find(x => x.id === activeAtsResumeId);
+      if (r) {
+        r.text = text;
+        r.updatedAt = Date.now();
+        await chrome.storage.local.set({ savedResumes });
+        populateAtsResumeSelect();
+        showAtsError('');
+        const btn = $('btn-update-resume-text');
+        const oldText = btn.textContent;
+        btn.textContent = 'Сохранено ✓';
+        setTimeout(() => { btn.textContent = oldText; }, 1400);
+      }
+    });
+  }
+
+  if ($('btn-save-inline-resume')) {
+    $('btn-save-inline-resume').addEventListener('click', async () => {
+      const nameInput = $('ats-new-resume-name');
+      const textInput = $('ats-new-resume-text');
+      const name = (nameInput && nameInput.value.trim()) || 'Новое резюме';
+      const text = (textInput && textInput.value.trim()) || '';
+      if (!text) {
+        showAtsError('Пожалуйста, введи текст резюме.');
+        return;
+      }
+      const { savedResumes } = await JFC.ensureSavedResumes();
+      const newResume = { id: JFC.genId(), name, text, updatedAt: Date.now() };
+      savedResumes.push(newResume);
+      await chrome.storage.local.set({ savedResumes, activeResumeId: newResume.id });
+      $('ats-new-resume-box').hidden = true;
+      if (nameInput) nameInput.value = '';
+      if (textInput) textInput.value = '';
+      await populateAtsResumeSelect();
+    });
+  }
 
   function populateAtsHistorySelect(items) {
     const select = $('ats-history-select');
@@ -1313,10 +1413,12 @@
     if (!select || !wrap) return;
 
     select.innerHTML = '';
-    const validItems = (Array.isArray(items) ? items : []).filter(i => {
-      const desc = i.vacancyText || (i.vacancy && i.vacancy.description);
-      return desc && desc.trim().length > 0;
-    });
+    const validItems = (Array.isArray(items) ? items : [])
+      .filter(i => {
+        const desc = i.vacancyText || (i.vacancy && i.vacancy.description);
+        return desc && desc.trim().length > 0;
+      })
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
     if (!validItems.length) {
       wrap.hidden = true;
@@ -1335,8 +1437,12 @@
       opt.value = String(idx);
       const d = item.date ? new Date(item.date) : null;
       const dateStr = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}` : '';
-      const verdictStr = item.verdict ? ` [${item.verdict}]` : '';
-      opt.textContent = `${item.title || 'Вакансия'}${verdictStr} (${dateStr})`;
+
+      let symbol = '✓ ';
+      if (item.verdict === 'С ОГОВОРКАМИ') symbol = '! ';
+      if (item.verdict === 'ПРОПУСТИТЬ') symbol = '✕ ';
+
+      opt.textContent = `${symbol}${item.title || 'Вакансия'} (${dateStr})`;
       select.appendChild(opt);
     });
 
@@ -1395,29 +1501,19 @@
     const keyCheck = await hasApiKeyForActiveModel();
     if (!keyCheck.ok) { showNoApiKey(keyCheck.modelKey); return; }
 
-    const { fullResumeText } = await chrome.storage.local.get('fullResumeText');
-    if (!fullResumeText || !fullResumeText.trim()) {
-      $('ats-no-resume-box').hidden = false;
+    const fullResume = $('ats-inline-resume') ? $('ats-inline-resume').value.trim() : '';
+    if (!fullResume) {
+      showAtsError('Пожалуйста, выбери или внеси текст резюме выше.');
       return;
     }
-    $('ats-no-resume-box').hidden = true;
 
-    runAtsMatch(description, fullResumeText.trim());
+    const { savedResumes } = await JFC.ensureSavedResumes();
+    const currentResumeObj = savedResumes.find(r => r.id === activeAtsResumeId) || savedResumes[0];
+
+    runAtsMatch(description, fullResume, currentResumeObj);
   });
 
-  $('btn-save-inline-resume').addEventListener('click', async () => {
-    const inlineText = $('ats-inline-resume').value.trim();
-    if (!inlineText) {
-      showAtsError('Пожалуйста, вставь текст вашего резюме.');
-      return;
-    }
-    await chrome.storage.local.set({ fullResumeText: inlineText });
-    $('ats-no-resume-box').hidden = true;
-    const description = (atsVacancyTextarea && atsVacancyTextarea.value.trim()) || vacancyTextarea.value.trim();
-    runAtsMatch(description, inlineText);
-  });
-
-  async function runAtsMatch(description, fullResume) {
+  async function runAtsMatch(description, fullResume, resumeObj) {
     $('btn-ats-check').disabled = true;
     $('ats-loading').style.display = 'block';
     const loadingLabel = $('ats-loading-label');
@@ -1449,6 +1545,9 @@
         score: resp.result.overall_match_score || 0,
         date: new Date().toISOString(),
         vacancy: { ...currentVacancy, description },
+        vacancyText: description,
+        resumeId: resumeObj ? resumeObj.id : null,
+        resumeName: resumeObj ? resumeObj.name : 'Резюме',
         result: resp.result,
         type: 'ats_vacancy_match'
       });
@@ -1730,5 +1829,6 @@
   initTabs();
   loadProfile();
   loadHistory();
+  populateAtsResumeSelect();
   safeExtractFromActiveTab();
 })();

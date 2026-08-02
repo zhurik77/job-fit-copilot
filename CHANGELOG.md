@@ -4,8 +4,24 @@ All notable changes to Job Fit Copilot will be documented in this file.
 
 ## [0.3.1] - 2026-08-02
 
+### Added
+- **Named Multi-Resume System (`savedResumes`)**:
+  - Ability to store, manage, rename, edit, and delete multiple named resumes (e.g. *«AI-automation»* and *«Business Analyst»*) in `options/options.html` and directly within the ATS match tab.
+  - Interactive resume selector dropdown (`#ats-resume-select`) in ATS tab with inline resume creation (`+ Добавить новое резюме...`).
+  - Automatic migration from legacy single `fullResumeText` to named `savedResumes` list via `ensureSavedResumes()`.
+  - History entries (`ats_vacancy_match`) now store `resumeId` and `resumeName` for clear record-keeping.
+- **Provider API Keys Documentation**:
+  - Documented client-side direct API key support for **OpenAI** (`gpt-4.1`) and **Anthropic** (`claude-sonnet-4-6`) alongside **NVIDIA NIM** (`deepseek-ai/deepseek-v4-flash` & `z-ai/glm-5.2`).
+- **Automated GitHub Release Workflow**:
+  - Added `.github/workflows/release.yml` for automated GitHub Releases on tag pushes using `softprops/action-gh-release@v2`.
+- **Donation Support Link**:
+  - Restored project donation link in `README.md`.
+
 ### Fixed
 - **Service Worker Syntax Error**: Resolved template string closing backtick formatting error in `shared/constants.js` to ensure clean service worker registration in Chrome MV3.
+- **ATS History Dropdown & Sorting**:
+  - Fixed ATS history dropdown sorting to display newest checks on top (descending by date).
+  - Replaced technical text tags (`[ПРОПУСТИТЬ]`) with clean verdict indicators (`✓`, `!`, `✕`).
 
 ## [0.3.0] - 2026-08-02
 

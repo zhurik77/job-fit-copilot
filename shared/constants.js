@@ -205,26 +205,25 @@ ${toneInstruction}
     return 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
-  // Именованные профили кандидата: profiles: [{id, name, text, source, sourceUrl?, updatedAt}],
-  // activeProfileId — какой из них используется по умолчанию для проверки/письма.
-  // Мигрирует старую схему (единственный profile:string) один раз при первом обращении.
-  async function ensureProfiles() {
-    const { profiles, activeProfileId, profile } = await chrome.storage.local.get(['profiles', 'activeProfileId', 'profile']);
-    if (Array.isArray(profiles) && profiles.length) {
-      const validActiveId = (activeProfileId && profiles.some(p => p.id === activeProfileId))
-        ? activeProfileId
-        : profiles[0].id;
-      return { profiles, activeProfileId: validActiveId };
+  // Именованные сохранённые резюме для ATS-сравнения под разные вакансии:
+  // savedResumes: [{ id, name, text, updatedAt }], activeResumeId: string.
+  async function ensureSavedResumes() {
+    const { savedResumes, activeResumeId, fullResumeText, profile } = await chrome.storage.local.get(['savedResumes', 'activeResumeId', 'fullResumeText', 'profile']);
+    if (Array.isArray(savedResumes) && savedResumes.length) {
+      const validActiveId = (activeResumeId && savedResumes.some(r => r.id === activeResumeId))
+        ? activeResumeId
+        : savedResumes[0].id;
+      return { savedResumes, activeResumeId: validActiveId };
     }
+    const textToMigrate = (fullResumeText && fullResumeText.trim()) || (profile && profile.trim()) || DEFAULT_PROFILE;
     const seeded = [{
       id: genId(),
-      name: 'Профиль',
-      text: (profile && profile.trim()) || DEFAULT_PROFILE,
-      source: 'manual',
+      name: 'AI-автоматизатор (Основное)',
+      text: textToMigrate,
       updatedAt: Date.now()
     }];
-    await chrome.storage.local.set({ profiles: seeded, activeProfileId: seeded[0].id });
-    return { profiles: seeded, activeProfileId: seeded[0].id };
+    await chrome.storage.local.set({ savedResumes: seeded, activeResumeId: seeded[0].id });
+    return { savedResumes: seeded, activeResumeId: seeded[0].id };
   }
 
   const ATS_MATCH_SYSTEM_PROMPT = `Сравни резюме кандидата с текстом конкретной вакансии. Раздели анализ на обязательные требования (из разделов вроде "Требования", "必须", явно сформулированных как обязательные) и желательные (из разделов "Будет плюсом", "Плюсом будет", "Приветствуется").
@@ -266,5 +265,5 @@ ${toneInstruction}
 Правило honesty_check обязательно для каждого actionable_edit — если не можешь подтвердить, что правка основана на реальных фактах резюме, не включай её в список вообще, а вместо этого добавь соответствующий пункт в critical_gaps.
 Если в вакансии нет явного разделения на обязательные и желательные требования, весь список считай обязательным (hard_requirements), а nice_to_have оставь пустым массивом.`;
 
-  globalThis.JFC = { PROVIDERS, MODELS, DEFAULT_MODEL, DEFAULT_PROFILE, FIT_CHECK_SYSTEM_PROMPT, RESUME_REVIEW_SYSTEM_PROMPT, ATS_MATCH_SYSTEM_PROMPT, letterPrompt, genId, ensureProfiles };
+  globalThis.JFC = { PROVIDERS, MODELS, DEFAULT_MODEL, DEFAULT_PROFILE, FIT_CHECK_SYSTEM_PROMPT, RESUME_REVIEW_SYSTEM_PROMPT, ATS_MATCH_SYSTEM_PROMPT, letterPrompt, genId, ensureSavedResumes };
 })();

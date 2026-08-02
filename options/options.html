@@ -99,10 +99,25 @@
 
     <div class="card">
       <div class="card-head">
-        <span class="label">Полный текст резюме (для ATS-разбора)</span>
+        <span class="label">Сохранённые резюме кандидата (для ATS-разбора)</span>
+        <button class="linkbtn" id="opt-resume-add">+ новое резюме</button>
       </div>
-      <textarea id="opt-full-resume" rows="12" placeholder="Вставь сюда полный текст своего резюме с hh.ru/LinkedIn (со всеми местами работы, обязанностями и подробными навыками)..."></textarea>
-      <div class="opt-hint">Используется для точечного ATS-сравнения резюме с конкретной вакансией. Рекомендуется вставить развёрнутый текст резюме.</div>
+
+      <select id="opt-resume-select"></select>
+
+      <div class="opt-row">
+        <input type="text" id="opt-resume-name" placeholder="Название резюме (например, AI-automation / Business Analyst)">
+        <button class="cta ghost" id="opt-resume-rename">Переименовать</button>
+      </div>
+
+      <textarea id="opt-full-resume" rows="12" placeholder="Вставь сюда полный текст этого резюме с hh.ru/LinkedIn..."></textarea>
+
+      <div class="opt-row">
+        <button class="cta ghost" id="opt-resume-save-text">Сохранить текст</button>
+        <button class="cta ghost" id="opt-resume-delete">Удалить резюме</button>
+      </div>
+
+      <div class="opt-hint" id="opt-resume-meta">Именованные резюме позволяют сравнивать разные версии позиционирования под вакансии на hh.ru/LinkedIn.</div>
     </div>
 
     <div class="card">

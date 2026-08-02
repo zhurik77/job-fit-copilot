@@ -116,7 +116,7 @@
         </div>
 
         <div id="ats-history-select-wrap">
-          <div class="meta" style="margin-bottom:6px;">Выбери ранее проверенную вакансию из истории:</div>
+          <div class="meta" style="margin-bottom:4px; font-weight:600;">Вакансия из истории проверок:</div>
           <select id="ats-history-select" style="margin-bottom:8px;"></select>
         </div>
 
@@ -126,18 +126,32 @@
 
         <button class="linkbtn" id="btn-ats-toggle-manual" type="button" style="margin-bottom:8px; display:inline-block;">или вставить текст вакансии вручную ▾</button>
 
-        <div id="ats-manual-container" hidden style="margin-top:6px;">
+        <div id="ats-manual-container" hidden style="margin-top:6px; margin-bottom:12px;">
           <textarea id="ats-vacancy-text" rows="6" placeholder="Вставь полный текст вакансии вручную..."></textarea>
+        </div>
+
+        <div id="ats-resume-select-wrap" style="margin-top:8px;">
+          <div class="meta" style="margin-bottom:4px; font-weight:600;">Резюме для сравнения:</div>
+          <select id="ats-resume-select" style="margin-bottom:8px;"></select>
+        </div>
+
+        <div id="ats-new-resume-box" hidden style="flex-direction:column; align-items:stretch; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px;">
+          <div style="font-weight:700; color:var(--ink); margin-bottom:6px;">Добавление нового именованного резюме</div>
+          <input type="text" id="ats-new-resume-name" placeholder="Название резюме (например, AI-automation / Business Analyst)" style="margin-bottom:6px; width:100%; border:1px solid var(--line); border-radius:8px; padding:8px;">
+          <textarea id="ats-new-resume-text" rows="6" placeholder="Вставь сюда полный текст резюме с hh.ru/LinkedIn..."></textarea>
+          <button class="cta" id="btn-save-inline-resume" style="margin-top:8px;">Сохранить и выбрать резюме</button>
+        </div>
+
+        <div id="ats-resume-preview-wrap" style="margin-bottom:12px;">
+          <button class="linkbtn" id="btn-toggle-resume-preview" type="button" style="margin-bottom:4px; display:inline-block;">показать/изменить текст резюме ▾</button>
+          <div id="ats-resume-preview-box" hidden>
+            <textarea id="ats-inline-resume" rows="6" placeholder="Текст выбранного резюме..."></textarea>
+            <button class="cta ghost" id="btn-update-resume-text" style="margin-top:4px; font-size:12px;">Сохранить изменения в резюме</button>
+          </div>
         </div>
 
         <button class="cta" id="btn-ats-check">Запустить ATS-разбор</button>
         <div class="error" id="ats-error"></div>
-
-        <div class="booster" id="ats-no-resume-box" hidden style="flex-direction:column; align-items:stretch; background:var(--amber-pale); border:1px solid var(--amber); margin-top:10px;">
-          <div style="font-weight:700; color:var(--amber-ink); margin-bottom:4px;">Вставь текст резюме один раз — дальше будет переиспользован для всех вакансий</div>
-          <textarea id="ats-inline-resume" rows="6" placeholder="Вставь сюда полный текст своего резюме (с hh.ru/LinkedIn)..."></textarea>
-          <button class="cta" id="btn-save-inline-resume" style="margin-top:8px;">Сохранить резюме и продолжить</button>
-        </div>
       </section>
 
       <div class="loading" id="ats-loading">
