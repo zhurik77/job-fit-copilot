@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
   <img src="https://img.shields.io/badge/design-iOS%20HIG-FF9500" alt="Design: iOS HIG">
   <img src="https://img.shields.io/badge/backend-none-3E9B5F" alt="Backend: none">
-  <a href="https://github.com/zhurik77/jobfitcopilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/jobfitcopilot?color=FF9500&label=скачать" alt="Скачать последний релиз"></a>
+  <a href="https://github.com/zhurik77/jobfitcopilot/releases/latest"><img src="https://img.shields.io/badge/скачать-последний_релиз-success" alt="Скачать последний релиз"></a>
 </p>
 
 <p align="center">
