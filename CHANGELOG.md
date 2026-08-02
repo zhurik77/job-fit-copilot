@@ -2,6 +2,11 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.3.1] - 2026-08-02
+
+### Fixed
+- **Service Worker Syntax Error**: Resolved template string closing backtick formatting error in `shared/constants.js` to ensure clean service worker registration in Chrome MV3.
+
 ## [0.3.0] - 2026-08-02
 
 ### Added
