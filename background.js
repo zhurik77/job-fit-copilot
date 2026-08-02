@@ -16,11 +16,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true; // канал остаётся открытым для асинхронного ответа
   }
   if (msg.type === 'WRITE_LETTER') {
-    handle(writeLetter(msg.vacancy, msg.profile, msg.sellingPoints, msg.lang), sendResponse);
+    handle(writeLetter(msg.vacancy, msg.profile, msg.sellingPoints, msg.lang, msg.tone, msg.flags), sendResponse);
     return true;
   }
   if (msg.type === 'REVIEW_RESUME') {
     handle(reviewResume(msg.profile), sendResponse);
+    return true;
+  }
+  if (msg.type === 'MATCH_ATS') {
+    handle(matchAts(msg.vacancy, msg.fullResume), sendResponse);
     return true;
   }
 });
@@ -164,10 +168,13 @@ async function analyzeFit(vacancy, profile) {
   return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
 }
 
-async function writeLetter(vacancy, profile, sellingPoints, lang) {
-  const system = JFC.letterPrompt(lang === 'en' ? 'en' : 'ru');
+async function writeLetter(vacancy, profile, sellingPoints, lang, tone, flags) {
+  const system = JFC.letterPrompt(lang === 'en' ? 'en' : 'ru', tone || 'neutral');
+  const pointsStr = Array.isArray(sellingPoints) ? sellingPoints.join('; ') : (sellingPoints || '—');
+  const flagsStr = Array.isArray(flags) ? flags.join('; ') : (flags || '—');
   const user = 'Профиль кандидата:\n' + profile +
-    '\n\nСильные стороны для этой вакансии: ' + (sellingPoints || '—') +
+    '\n\nСильные стороны для этой вакансии: ' + pointsStr +
+    '\n\nФакторы риска / Red Flags для этой вакансии: ' + flagsStr +
     '\n\nВакансия:\n' + formatVacancy(vacancy);
   const res = await callProvider(system, user, 1200);
   if (!res.ok) return res;
@@ -177,6 +184,17 @@ async function writeLetter(vacancy, profile, sellingPoints, lang) {
 async function reviewResume(profile) {
   const user = 'Резюме кандидата:\n' + profile;
   const res = await callProvider(JFC.RESUME_REVIEW_SYSTEM_PROMPT, user, 2500);
+  if (!res.ok) return res;
+
+  const raw = extractText(res).replace(/```json|```/g, '').trim();
+  const parsed = parseModelJson(raw);
+  if (parsed) return { ok: true, result: parsed };
+  return { ok: false, code: 'PARSE_ERROR', message: raw.slice(0, 300) };
+}
+
+async function matchAts(vacancy, fullResume) {
+  const user = 'Полный текст резюме кандидата:\n' + fullResume + '\n\nВакансия:\n' + formatVacancy(vacancy);
+  const res = await callProvider(JFC.ATS_MATCH_SYSTEM_PROMPT, user, 3000);
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();

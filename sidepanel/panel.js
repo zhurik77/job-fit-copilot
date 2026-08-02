@@ -514,6 +514,7 @@
         score,
         date: new Date().toISOString(),
         vacancy: { ...currentVacancy, description },
+        vacancyText: description,
         result: resp.result
       });
     } catch (e) {
@@ -525,6 +526,19 @@
     }
   });
 
+  const SVG_ICONS = {
+    check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    alertTriangle: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    x: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+    alertCircle: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
+  };
+
+  const VERDICT_ICONS = {
+    good: SVG_ICONS.check,
+    mid: SVG_ICONS.alertTriangle,
+    bad: SVG_ICONS.x
+  };
+
   function renderResult(parsed, score, existingId) {
     const verdict = VERDICTS.includes(parsed.verdict) ? parsed.verdict : 'С ОГОВОРКАМИ';
     const kind = verdictKind(verdict);
@@ -534,8 +548,19 @@
     $('result-id').textContent = '#' + id;
 
     const chip = $('verdict-chip');
-    chip.textContent = verdict;
-    chip.className = 'chip chip-verdict chip-' + kind;
+    if (chip) chip.textContent = verdict;
+
+    const banner = $('verdict-banner');
+    if (banner) banner.className = 'verdict-banner verdict-' + kind;
+
+    const iconEl = $('verdict-icon');
+    if (iconEl) iconEl.innerHTML = VERDICT_ICONS[kind] || '•';
+
+    const barFill = $('verdict-bar-fill');
+    if (barFill) {
+      barFill.className = 'verdict-bar-fill verdict-' + kind;
+      barFill.style.width = Math.max(5, Math.min(100, score)) + '%';
+    }
 
     setGauge('tile-score', 'tile-score-arc', score, kind);
 
@@ -653,7 +678,10 @@
 
     const profile = $('profile-text').value.trim() || DEFAULT_PROFILE;
     const sellingPoints = Array.from(document.querySelectorAll('#selling li'))
-      .map(li => li.textContent).filter(t => t !== '—').join('; ');
+      .map(li => li.textContent).filter(t => t !== '—');
+    const flags = Array.from(document.querySelectorAll('#flags li'))
+      .map(li => li.textContent).filter(t => t !== '—');
+    const tone = $('letter-tone') ? $('letter-tone').value : 'neutral';
 
     $('letter-block').hidden = true;
     $('letter-loading').style.display = 'block';
@@ -666,7 +694,9 @@
         vacancy: currentVacancy,
         profile,
         sellingPoints,
-        lang
+        lang,
+        tone,
+        flags
       }, letterLoadingLabel, 'Пишу письмо');
       if (!resp) throw new Error('empty response');
       if (!resp.ok) {
@@ -677,6 +707,8 @@
       }
       $('letter-text').value = resp.result;
       $('letter-block').hidden = false;
+      const { lettersCount } = await chrome.storage.local.get('lettersCount');
+      await chrome.storage.local.set({ lettersCount: (lettersCount || 0) + 1 });
     } catch (e) {
       showError('Не получилось написать письмо. Проверь подключение и попробуй ещё раз.');
       console.error(e);
@@ -722,6 +754,7 @@
     historyCount = items.length;
     $('history-count').textContent = items.length ? items.length + ' шт' : '';
     renderAnalytics(items);
+    populateAtsHistorySelect(items);
 
     if (!items.length) {
       const empty = document.createElement('div');
@@ -808,14 +841,25 @@
     renderHistory(items);
   }
 
-  function renderAnalytics(items) {
+  async function renderAnalytics(items) {
     const total = items.length;
+    const now = Date.now();
+    const ms7d = 7 * 86400 * 1000;
+    const ms30d = 30 * 86400 * 1000;
+
+    const count7d = items.filter(i => (now - new Date(i.date || 0).getTime()) <= ms7d).length;
+    const count30d = items.filter(i => (now - new Date(i.date || 0).getTime()) <= ms30d).length;
+
     const applied = items.filter(i => i.applied).length;
     const avg = total ? Math.round(items.reduce((s, i) => s + (Number(i.score) || 0), 0) / total) : 0;
 
-    $('an-total').textContent = total || '—';
-    $('an-applied').textContent = total ? applied + ' (' + Math.round(applied / total * 100) + '%)' : '—';
-    $('an-avg').textContent = total ? avg : '—';
+    const { lettersCount } = await chrome.storage.local.get('lettersCount');
+
+    if ($('an-total-all')) $('an-total-all').textContent = total || '—';
+    if ($('an-total-recent')) $('an-total-recent').textContent = total ? `${count7d} / ${count30d}` : '—';
+    if ($('an-applied')) $('an-applied').textContent = total ? applied + ' (' + Math.round(applied / total * 100) + '%)' : '—';
+    if ($('an-avg')) $('an-avg').textContent = total ? avg : '—';
+    if ($('an-letters')) $('an-letters').textContent = lettersCount || 0;
 
     renderBestResult(items);
 
@@ -826,16 +870,63 @@
     const sourceCounts = {};
     items.forEach(i => { const s = i.source || 'другое'; sourceCounts[s] = (sourceCounts[s] || 0) + 1; });
     const sWrap = $('an-sources');
-    sWrap.textContent = '';
-    Object.entries(sourceCounts).forEach(([s, c]) => {
-      const chip = document.createElement('span');
-      chip.className = 'chip chip-mini chip-source';
-      chip.textContent = (sourceLabel(s) || s) + ': ' + c;
-      sWrap.appendChild(chip);
-    });
+    if (sWrap) {
+      sWrap.textContent = '';
+      Object.entries(sourceCounts).forEach(([s, c]) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip chip-mini chip-source';
+        chip.textContent = (sourceLabel(s) || s) + ': ' + c;
+        sWrap.appendChild(chip);
+      });
+    }
 
+    renderWeeklyActivity(items);
     renderHistogram(items);
     renderSparkline(items);
+  }
+
+  function renderWeeklyActivity(items) {
+    const wrap = $('an-weekly-chart');
+    if (!wrap) return;
+    wrap.textContent = '';
+    if (!items.length) return;
+
+    const now = Date.now();
+    const msInWeek = 7 * 86400 * 1000;
+    const weeks = [0, 0, 0, 0];
+
+    items.forEach(i => {
+      const diff = now - new Date(i.date || 0).getTime();
+      const wIdx = Math.floor(diff / msInWeek);
+      if (wIdx >= 0 && wIdx < 4) {
+        weeks[3 - wIdx]++;
+      }
+    });
+
+    const maxW = Math.max(...weeks, 1);
+    const labels = ['3-4 нед назад', '2-3 нед назад', 'прошлая нед', 'эта неделя'];
+
+    labels.forEach((lbl, idx) => {
+      const row = document.createElement('div');
+      row.className = 'hist-row';
+
+      const label = document.createElement('span');
+      label.className = 'hist-label';
+      label.style.width = '90px';
+      label.textContent = lbl;
+
+      const track = document.createElement('div');
+      track.className = 'hist-track';
+      const fill = document.createElement('div');
+      fill.className = 'hist-fill';
+      fill.style.width = (weeks[idx] ? Math.max(14, weeks[idx] / maxW * 100) : 0) + '%';
+      fill.textContent = weeks[idx] || '';
+      track.appendChild(fill);
+
+      row.appendChild(label);
+      row.appendChild(track);
+      wrap.appendChild(row);
+    });
   }
 
   // Самый высокий индекс за всё время — кликабелен (открывает полный разбор),
@@ -1041,6 +1132,315 @@
     label.style.fill = 'var(--amber-ink)';
     label.textContent = String(scores[scores.length - 1]);
     svg.appendChild(label);
+  }
+
+  // ---------- ATS-разбор ----------
+
+  function showAtsError(text) {
+    const el = $('ats-error');
+    if (el) el.textContent = text;
+  }
+
+  function clearAtsError() {
+    const el = $('ats-error');
+    if (el) el.textContent = '';
+  }
+
+  const atsVacancyTextarea = $('ats-vacancy-text');
+
+  function populateAtsHistorySelect(items) {
+    const select = $('ats-history-select');
+    const wrap = $('ats-history-select-wrap');
+    const emptyNotice = $('ats-empty-history-notice');
+    const manualContainer = $('ats-manual-container');
+    const toggleBtn = $('btn-ats-toggle-manual');
+    if (!select || !wrap) return;
+
+    select.innerHTML = '';
+    const validItems = (Array.isArray(items) ? items : []).filter(i => {
+      const desc = i.vacancyText || (i.vacancy && i.vacancy.description);
+      return desc && desc.trim().length > 0;
+    });
+
+    if (!validItems.length) {
+      wrap.hidden = true;
+      if (emptyNotice) emptyNotice.hidden = false;
+      if (manualContainer) manualContainer.hidden = false;
+      if (toggleBtn) toggleBtn.hidden = true;
+      return;
+    }
+
+    wrap.hidden = false;
+    if (emptyNotice) emptyNotice.hidden = true;
+    if (toggleBtn) toggleBtn.hidden = false;
+
+    validItems.forEach((item, idx) => {
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      const d = item.date ? new Date(item.date) : null;
+      const dateStr = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}` : '';
+      const verdictStr = item.verdict ? ` [${item.verdict}]` : '';
+      opt.textContent = `${item.title || 'Вакансия'}${verdictStr} (${dateStr})`;
+      select.appendChild(opt);
+    });
+
+    select._items = validItems;
+
+    if (validItems[0]) {
+      const desc = validItems[0].vacancyText || (validItems[0].vacancy && validItems[0].vacancy.description) || '';
+      if (atsVacancyTextarea) atsVacancyTextarea.value = desc;
+      if (validItems[0].vacancy) currentVacancy = { ...validItems[0].vacancy, description: desc };
+    }
+  }
+
+  if ($('ats-history-select')) {
+    $('ats-history-select').addEventListener('change', (e) => {
+      const select = e.target;
+      const items = select._items || [];
+      const selected = items[Number(select.value)];
+      if (selected) {
+        const desc = selected.vacancyText || (selected.vacancy && selected.vacancy.description) || '';
+        if (atsVacancyTextarea) atsVacancyTextarea.value = desc;
+        if (selected.vacancy) currentVacancy = { ...selected.vacancy, description: desc };
+      }
+    });
+  }
+
+  if ($('btn-ats-toggle-manual')) {
+    $('btn-ats-toggle-manual').addEventListener('click', () => {
+      const container = $('ats-manual-container');
+      if (container) {
+        container.hidden = !container.hidden;
+        $('btn-ats-toggle-manual').textContent = container.hidden
+          ? 'или вставить текст вакансии вручную ▾'
+          : 'скрыть ручной ввод ▴';
+      }
+    });
+  }
+
+  $('btn-ats-reextract').addEventListener('click', async () => {
+    clearAtsError();
+    await extractFromActiveTab();
+    if (currentVacancy.description && atsVacancyTextarea) {
+      atsVacancyTextarea.value = currentVacancy.description;
+    }
+  });
+
+  $('btn-ats-check').addEventListener('click', async () => {
+    clearAtsError();
+    $('ats-result').hidden = true;
+
+    const description = (atsVacancyTextarea && atsVacancyTextarea.value.trim()) || vacancyTextarea.value.trim();
+    if (!description) {
+      showAtsError('Нет текста вакансии. Открой страницу вакансии или вставь текст вручную.');
+      return;
+    }
+
+    const keyCheck = await hasApiKeyForActiveModel();
+    if (!keyCheck.ok) { showNoApiKey(keyCheck.modelKey); return; }
+
+    const { fullResumeText } = await chrome.storage.local.get('fullResumeText');
+    if (!fullResumeText || !fullResumeText.trim()) {
+      $('ats-no-resume-box').hidden = false;
+      return;
+    }
+    $('ats-no-resume-box').hidden = true;
+
+    runAtsMatch(description, fullResumeText.trim());
+  });
+
+  $('btn-save-inline-resume').addEventListener('click', async () => {
+    const inlineText = $('ats-inline-resume').value.trim();
+    if (!inlineText) {
+      showAtsError('Пожалуйста, вставь текст вашего резюме.');
+      return;
+    }
+    await chrome.storage.local.set({ fullResumeText: inlineText });
+    $('ats-no-resume-box').hidden = true;
+    const description = (atsVacancyTextarea && atsVacancyTextarea.value.trim()) || vacancyTextarea.value.trim();
+    runAtsMatch(description, inlineText);
+  });
+
+  async function runAtsMatch(description, fullResume) {
+    $('btn-ats-check').disabled = true;
+    $('ats-loading').style.display = 'block';
+    const loadingLabel = $('ats-loading-label');
+
+    try {
+      currentVacancy.description = description;
+      const resp = await sendWithRetry({
+        type: 'MATCH_ATS',
+        vacancy: currentVacancy,
+        fullResume
+      }, loadingLabel, 'Сравниваю резюме с вакансией');
+
+      if (!resp) throw new Error('empty response');
+      if (!resp.ok) {
+        if (resp.code === 'NO_API_KEY') { showError('Не указан API-ключ для модели «' +resp.message + '». Добавь его в настройках.'); openSettingsBtn.hidden = false; return; }
+        if (resp.code === 'PARSE_ERROR') { showAtsError('Модель вернула повреждённый ответ. Попробуй ещё раз.'); return; }
+        if (resp.code === 'RATE_LIMIT') { showAtsError('Провайдер перегружен. Попробуй позже.'); return; }
+        showAtsError('Ошибка API: ' + (resp.message || 'неизвестная'));
+        return;
+      }
+
+      const id = renderAtsResult(resp.result, description);
+      await saveToHistory({
+        id,
+        title: (currentVacancy.title || 'Вакансия') + ' (ATS)',
+        source: currentVacancy.source || '',
+        url: currentVacancy.url || '',
+        verdict: resp.result.overall_match_score >= 75 ? 'ОТКЛИКАТЬСЯ' : (resp.result.overall_match_score >= 50 ? 'С ОГОВОРКАМИ' : 'ПРОПУСТИТЬ'),
+        score: resp.result.overall_match_score || 0,
+        date: new Date().toISOString(),
+        vacancy: { ...currentVacancy, description },
+        result: resp.result,
+        type: 'ats_vacancy_match'
+      });
+    } catch (e) {
+      showAtsError('Не получилось сделать ATS-разбор. Проверь подключение.');
+      console.error(e);
+    } finally {
+      $('btn-ats-check').disabled = false;
+      $('ats-loading').style.display = 'none';
+    }
+  }
+
+  function renderAtsResult(parsed, description) {
+    const id = makeCheckId();
+    $('ats-result-id').textContent = '#' + id;
+
+    const hardPct = Math.round(Number(parsed.hard_requirements_coverage_percent) || 0);
+    const nicePct = Math.round(Number(parsed.nice_to_have_coverage_percent) || 0);
+    const overallScore = Math.round(Number(parsed.overall_match_score) || 0);
+
+    $('ats-hard-pct').textContent = hardPct + '%';
+    $('ats-nice-pct').textContent = nicePct + '%';
+    $('ats-score').textContent = overallScore + '%';
+
+    renderAtsReqList($('ats-hard-reqs-list'), parsed.hard_requirements);
+    renderAtsReqList($('ats-nice-reqs-list'), parsed.nice_to_have);
+
+    const gapsBox = $('ats-critical-gaps-box');
+    const gapsList = $('ats-critical-gaps-list');
+    const warnEl = $('ats-honest-warning');
+
+    const hasGaps = Array.isArray(parsed.critical_gaps) && parsed.critical_gaps.length > 0;
+    const hasWarn = !!parsed.honest_gap_warning;
+
+    if (hasGaps || hasWarn) {
+      gapsBox.hidden = false;
+      fillList(gapsList, parsed.critical_gaps || []);
+      warnEl.textContent = parsed.honest_gap_warning || '';
+    } else {
+      gapsBox.hidden = true;
+    }
+
+    const editsWrap = $('ats-actionable-edits');
+    editsWrap.textContent = '';
+    const edits = Array.isArray(parsed.actionable_edits) ? parsed.actionable_edits : [];
+    if (!edits.length) {
+      const empty = document.createElement('div');
+      empty.className = 'meta';
+      empty.textContent = 'Критичных правок не требуется — резюме покрывает заявленные факты.';
+      editsWrap.appendChild(empty);
+    } else {
+      edits.forEach(edit => {
+        const card = document.createElement('div');
+        card.className = 'ats-edit-card';
+
+        const sec = document.createElement('div');
+        sec.className = 'ats-edit-section';
+        sec.textContent = edit.resume_section || 'Раздел резюме';
+
+        const gap = document.createElement('div');
+        gap.className = 'ats-edit-gap';
+        gap.textContent = 'Не покрыто: ' + (edit.current_gap || '');
+
+        const text = document.createElement('div');
+        text.className = 'ats-edit-text';
+        text.textContent = edit.suggested_text || '';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'cta ghost';
+        copyBtn.style.marginTop = '4px';
+        copyBtn.style.padding = '6px 10px';
+        copyBtn.style.fontSize = '12px';
+        copyBtn.textContent = 'Скопировать формулировку';
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(edit.suggested_text || '');
+            flashButton(copyBtn, 'Скопировано ✓');
+          } catch (e) {
+            flashButton(copyBtn, 'Ошибка копирования');
+          }
+        });
+
+        card.appendChild(sec);
+        card.appendChild(gap);
+        card.appendChild(text);
+        card.appendChild(copyBtn);
+        editsWrap.appendChild(card);
+      });
+    }
+
+    $('btn-ats-run-fitcheck').onclick = () => {
+      vacancyTextarea.value = description;
+      activateTab('check');
+      checkBtn.click();
+    };
+
+    $('ats-result').hidden = false;
+    return id;
+  }
+
+  function renderAtsReqList(wrap, reqs) {
+    wrap.textContent = '';
+    const list = Array.isArray(reqs) && reqs.length ? reqs : [];
+    if (!list.length) {
+      const empty = document.createElement('div');
+      empty.className = 'meta';
+      empty.textContent = '—';
+      wrap.appendChild(empty);
+      return;
+    }
+
+    list.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'ats-req-item';
+
+      const head = document.createElement('div');
+      head.className = 'ats-req-head';
+
+      const title = document.createElement('span');
+      title.className = 'ats-req-title';
+      title.textContent = item.requirement || '';
+
+      const chip = document.createElement('span');
+      const st = item.status || 'missing';
+      chip.className = 'chip chip-mini ' + (st === 'covered' ? 'chip-good' : (st === 'partially_covered' ? 'chip-mid' : 'chip-bad'));
+      const icon = st === 'covered' ? SVG_ICONS.check : (st === 'partially_covered' ? SVG_ICONS.alertTriangle : SVG_ICONS.x);
+      const labelText = st === 'covered' ? ' Покрыто' : (st === 'partially_covered' ? ' Частично' : ' Отсутствует');
+      chip.innerHTML = icon + labelText;
+
+      head.appendChild(title);
+      head.appendChild(chip);
+      row.appendChild(head);
+
+      if (item.matched_as) {
+        const matched = document.createElement('div');
+        matched.className = 'ats-matched-snippet';
+        matched.textContent = 'В резюме: ' + item.matched_as + (item.note ? ' (' + item.note + ')' : '');
+        row.appendChild(matched);
+      } else if (item.note) {
+        const note = document.createElement('div');
+        note.className = 'meta';
+        note.style.marginTop = '4px';
+        note.textContent = item.note;
+        row.appendChild(note);
+      }
+
+      wrap.appendChild(row);
+    });
   }
 
   // ---------- настройки ----------

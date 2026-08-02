@@ -1,170 +1,97 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.svg">
-    <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — AI-расширение для Chrome: разбор совпадения вакансии по факторам вместо голого процента">
+    <img src="docs/hero.svg" width="100%" alt="Job Fit Copilot — AI-расширение для Chrome: разбор совпадения вакансии и ATS-анализ резюме">
   </picture>
 </p>
 
-<h1 align="center">Job Fit Copilot</h1>
+<h1 align="center">Job Fit Copilot v0.2.0</h1>
 <p align="center">
-  <b>AI-помощник соискателя для Chrome и Edge</b> — прозрачный разбор совпадения вакансии по факторам,
-  готовые к отправке сопроводительные письма и аналитика откликов.<br>
-  hh.ru · LinkedIn · Upwork · DeepSeek / GLM / GPT / Claude — свой ключ, без бэкенда.
+  > AI-ассистент для проверки соответствия вакансий, ATS-анализа резюме и генерации сопроводительных писем — прямо в браузере.<br>
+  hh.ru · LinkedIn · Upwork · DeepSeek V4 Flash / GLM-5.2 / GPT-4.1 / Claude Sonnet 4.6 — свой ключ, без бэкенда.
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/version-0.2.0-FF9500" alt="Version: 0.2.0">
   <img src="https://img.shields.io/badge/license-MIT-4A7FD4" alt="License: MIT">
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
+  <img src="https://img.shields.io/badge/design-Apple%20HIG-FF9500" alt="Design: Apple HIG">
   <img src="https://img.shields.io/badge/backend-none-3E9B5F" alt="Backend: none">
-  <img src="https://img.shields.io/badge/providers-NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Anthropic-8A8378" alt="Providers">
-  <a href="https://github.com/zhurik77/jobfitcopilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/jobfitcopilot?color=F2A33C&label=скачать" alt="Скачать последний релиз"></a>
+  <a href="https://github.com/zhurik77/jobfitcopilot/releases/latest"><img src="https://img.shields.io/github/v/release/zhurik77/jobfitcopilot?color=FF9500&label=скачать" alt="Скачать последний релиз"></a>
 </p>
 
 <p align="center">
-  <a href="#зачем">Зачем</a> ·
   <a href="#возможности">Возможности</a> ·
-  <a href="#чем-отличается">Чем отличается</a> ·
   <a href="#быстрый-старт">Быстрый старт</a> ·
+  <a href="#стек">Стек</a> ·
+  <a href="#чем-отличается">Чем отличается</a> ·
   <a href="#приватность-и-архитектура">Приватность</a> ·
-  <a href="#вклад-в-проект">Донат</a>
+  <a href="#changelog">Changelog</a>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/features-dark.svg">
-    <img src="docs/features.svg" width="100%" alt="Разбор по факторам · несколько резюме · аналитика откликов · ноль бэкенда">
+    <img src="docs/features.svg" width="100%" alt="Разбор по факторам · ATS-разбор · аналитика откликов · ноль бэкенда">
   </picture>
 </p>
 
 ---
 
-## Зачем
-
-Teal, Jobscan, Huntr, Careerflow — у всех один и тот же чёрный ящик: число без
-объяснений. Здесь индекс = 50 (базовый уровень) + сумма конкретных факторов,
-каждый со своим весом и обоснованием. Видно ровно то, что решило вердикт.
-
-> | Фактор | Δ |
-> |---|---:|
-> | базовый уровень | 50 |
-> | Стек совпадает: Python, REST API | +18 |
-> | Домен: автоматизация процессов | +12 |
-> | n8n/Zapier — прямое попадание | +8 |
-> | Нет опыта с Kubernetes | −10 |
-> | Просят английский C1, у кандидата B2 | −4 |
-> | **индекс** | **74** |
-
-Плюс сопроводительное письмо, готовое к отправке без правок, и ноль бэкенда —
-резюме и API-ключ идут напрямую в API провайдера, без посредника.
-
 ## Возможности
 
-| | |
+| Фича | Описание |
 |---|---|
-| **Разбор по факторам** | Ledger-waterfall вместо одного числа — видно, что именно подняло или снизило индекс |
-| **Письмо без правок** | Готово к отправке: без плейсхолдеров, без канцелярита |
-| **Несколько резюме** | Именованные профили, импорт с hh.ru в один клик прямо со страницы резюме |
-| **Оценка резюме** | Отдельно от вакансии — качество самого резюме, до отклика |
-| **Аналитика откликов** | История с отметкой «откликнулся», донат по вердиктам, тренд индекса |
-| **4 провайдера** | DeepSeek V4 Flash / GLM-5.2 (NVIDIA NIM), OpenAI, Anthropic — свой ключ, авто-повтор при перегрузке |
+| **Разбор по факторам (fit-check)** | Прозрачный ledger-разбор (база 50 + дельты совпадений и несовпадений по факторам) |
+| **Точечный ATS-разбор** | Разделение требований на обязательные и желательные (`hard_requirements` vs `nice_to_have`), смысловой мэтчинг (`matched_as`), критичные пробелы и точечные правки с кнопкой «Скопировать» |
+| **ATS из истории** | Выбор ранее сохранённых вакансий из истории в один клик без повторного ввода текста |
+| **Сопроводительные письма** | Сопоставление требований с реальным опытом кандидата, выбор тона (Нейтральный / Уверенный), отработка red flags и защита от клише |
+| **Аналитика использования** | Статистика проверок (всего, 7 и 30 дней), график недельной активности, распределение вердиктов и топ источников |
+| **Apple-Style UI (macOS HIG)** | SF Pro типографика, нативный Segmented Control, визуальная слоистость с `backdrop-filter: blur`, закруглённые карточки и векторные иконки SF Symbols |
 
-Расширение читает только DOM текущей вкладки: без фонового парсинга списков
-вакансий, без авто-откликов, без обхода авторизации площадок. Отправка отклика
-— всегда вручную, на самой площадке.
+## Быстрый старт (Установка)
 
-## Чем отличается
-
-| | Job Fit Copilot | Teal / Jobscan / Huntr / Careerflow |
-|---|---|---|
-| Индекс совпадения | Прозрачный ledger: база 50 + дельта и объяснение по каждому фактору | Один % без разбивки причин |
-| Хранение данных | Только `chrome.storage.local` этого браузера | Аккаунт в облаке сервиса |
-| Бэкенд | Нет — прямой запрос к выбранному AI-провайдеру своим ключом | Есть — обработка на их серверах |
-| Модель | На выбор: DeepSeek / GLM / GPT / Claude, свой API-ключ | Фиксированная, зашита в подписку |
-| Автоотклики | Нет — только чтение текущей вкладки, отправка вручную на площадке | У части сервисов есть авто-рассылка откликов |
-| Стоимость | Бесплатно и open source, платишь только за токены своему провайдеру | Платная подписка |
-
-## Быстрый старт
-
-1. **Установка.** Скачать [последний релиз](https://github.com/zhurik77/jobfitcopilot/releases/latest)
-   (`.zip`) и распаковать, или:
+1. **Скачать или клонировать репозиторий:**
    ```bash
    git clone https://github.com/zhurik77/jobfitcopilot.git
    ```
-   Затем `chrome://extensions` (или `edge://extensions`) → включить «Режим
-   разработчика» → «Загрузить распакованное расширение» → выбрать папку
-   `jobfitcopilot/`.
-2. **Ключ.** Получить у нужного провайдера — [NVIDIA NIM](https://build.nvidia.com/),
-   [OpenAI](https://platform.openai.com/api-keys) или
-   [Anthropic](https://console.anthropic.com/settings/keys) — нужен только ключ
-   той модели, которую будешь использовать. Вставить в настройках расширения (⚙),
-   выбрать активную модель.
-3. **Профиль.** Открыть свою страницу резюме на hh.ru → в панели →
-   «Импортировать резюме с этой страницы». Либо вставить текст вручную.
-4. **Проверка.** Открыть вакансию на hh.ru / LinkedIn / Upwork → иконка
-   расширения → «Проверить соответствие» → вердикт, разбор, письмо.
+2. **Загрузить в браузер:**
+   Перейти в `chrome://extensions` (или `edge://extensions`) → включить **«Режим разработчика»** → нажать **«Загрузить распакованное расширение»** → выбрать папку `jobfitcopilot/`.
+3. **Настроить API-ключ:**
+   Нажать на иконку расширения → открыть настройки (⚙) → вставить API-ключ выбранного провайдера ([NVIDIA NIM](https://build.nvidia.com/), [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/)).
+4. **Запустить разбор:**
+   Открыть вакансию на hh.ru / LinkedIn / Upwork → открыть боковую панель (Side Panel) → запустить Fit-Check или ATS-разбор.
 
-## Профили и резюме
+## Стек
 
-- Несколько именованных профилей — переключаются select'ом в панели, полностью
-  управляются (переименование/удаление) в настройках.
-- Импорт с hh.ru обновляет существующий профиль при повторном импорте того же
-  резюме — без дублей.
-- LinkedIn/Upwork своих резюме не читают — там только вручную через textarea.
+- **Manifest V3** (Chrome / Edge Extension API)
+- **Direct LLM Provider API**: NVIDIA NIM (DeepSeek V4 Flash, GLM-5.2), OpenAI (GPT-4.1), Anthropic (Claude Sonnet 4.6)
+- **Local Storage**: `chrome.storage.local` (без бэкенда и облачных серверов)
+- **Design System**: Vanilla CSS, macOS HIG, SF Symbols Iconography, System Accent `#FF9500`
+
+## Чем отличается
+
+| | Job Fit Copilot v0.2.0 | Teal / Jobscan / Huntr / Careerflow |
+|---|---|---|
+| **Индекс совпадения** | Прозрачный ledger: база 50 + дельта и объяснение по каждому фактору | Один % без разбивки причин |
+| **ATS-анализ** | Точечный разбор по обязательным и желательным требованиям со смысловым мэтчингом | Простая сверка ключевых слов |
+| **Хранение данных** | Только `chrome.storage.local` этого браузера | Облачный аккаунт |
+| **Бэкенд** | Отсутствует — прямой запрос к выбранному AI-провайдеру | Есть — обработка на их серверах |
+| **Стоимость** | Бесплатно и Open Source | Платная подписка |
 
 ## Приватность и архитектура
 
-Ничего, кроме одного HTTPS-запроса к выбранному провайдеру, никуда не уходит:
-без бэкенда, без аналитики, без телеметрии. Профиль, ключи и история — только
-в `chrome.storage.local` этого браузера.
+Всё содержимое профиля, API-ключи и история проверок хранятся исключительно в `chrome.storage.local` вашего браузера.
 
 ```mermaid
 flowchart LR
-    Tab["Вкладка: вакансия / резюме"] -->|content script читает DOM| Panel["Side Panel"]
+    Tab["Вкладка: вакансия / резюме"] -->|content script| Panel["Side Panel (macOS HIG UI)"]
     Panel <-->|chrome.storage.local| Store[("Профили · Ключи · История")]
-    Panel -->|один HTTPS-запрос, свой ключ| Provider{"Выбранный провайдер"}
-    Provider --> NIM["NVIDIA NIM"]
-    Provider --> OpenAI["OpenAI"]
-    Provider --> Anthropic["Anthropic"]
+    Panel -->|прямой HTTPS-запрос| Provider{"Выбранный провайдер"}
+    Provider --> NIM["NVIDIA NIM (DeepSeek / GLM)"]
+    Provider --> OpenAI["OpenAI (GPT-4.1)"]
+    Provider --> Anthropic["Anthropic (Claude)"]
 ```
-
-Исходники открыты — можно проверить самому, а не верить на слово.
-
-## Структура проекта
-
-```
-manifest.json           MV3: permissions, side panel, content scripts
-background.js           service worker: вызовы провайдеров
-shared/constants.js     провайдеры, модели, профиль по умолчанию, промпты
-content-scripts/        DOM-экстракторы под каждую площадку
-sidepanel/              UI панели (тёплая светлая тема)
-options/                настройки: ключи, модель, профиль, язык писем
-icons/                  генерируются: python tools/make_icons.py
-tools/preview.html      статичный предпросмотр панели (без браузерных API)
-docs/hero.svg           баннер README (+ hero-dark.svg для тёмной темы)
-```
-
-## Заметки
-
-- **Селекторы площадок ориентировочные.** Вёрстка hh.ru / LinkedIn / Upwork
-  меняется — если текст не подтягивается, актуализировать селекторы в
-  `content-scripts/extractor-*.js` или вставить текст вручную (fallback есть).
-- Провайдеры и модели — в `shared/constants.js` (`PROVIDERS`, `MODELS`). Если
-  API отвечает `model not found`, поменять id модели там же.
-- История — последние 50 проверок.
-
-## Вклад в проект
-
-Issues и PR приветствуются — особенно по актуализации селекторов площадок,
-они меняются вместе с вёрсткой hh.ru / LinkedIn / Upwork.
-
-Если проект оказался полезен — можно поставить звезду репозиторию или
-[поддержать донатом](https://www.tbank.ru/cf/1cYvs7KjikV).
-
-<sub>
-  <a href="https://star-history.com/#zhurik77/jobfitcopilot&Date">
-    <img src="https://api.star-history.com/svg?repos=zhurik77/jobfitcopilot&type=Date" width="100%" alt="История звёзд репозитория">
-  </a>
-</sub>
 
 ## Лицензия
 

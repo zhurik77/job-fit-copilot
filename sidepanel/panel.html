@@ -15,6 +15,7 @@
 
   <nav class="tabbar" id="tabbar">
     <button class="tab-btn active" data-tab="check" type="button">Проверка</button>
+    <button class="tab-btn" data-tab="ats" type="button">ATS-разбор</button>
     <button class="tab-btn" data-tab="profile" type="button">Профиль</button>
     <button class="tab-btn" data-tab="analytics" type="button">Аналитика</button>
     <button class="tab-btn" data-tab="history" type="button">Журнал</button>
@@ -24,7 +25,7 @@
 
     <div class="tab-panel" data-tab="check">
 
-      <section class="card">
+      <section class="card card-primary">
         <div class="card-head">
           <span class="label">Объект проверки</span>
           <button class="linkbtn" id="btn-reextract">обновить со страницы</button>
@@ -40,13 +41,21 @@
         <span id="loading-label">Проверяю</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
       </div>
 
-      <section class="card" id="result" hidden>
+      <section class="card animate-in" id="result" hidden>
         <div class="card-head">
           <span class="label">Заключение</span>
           <span class="mono muted" id="result-id"></span>
         </div>
 
-        <div class="verdict-row"><span class="chip chip-verdict" id="verdict-chip"></span></div>
+        <div class="verdict-banner" id="verdict-banner">
+          <div class="verdict-header">
+            <span class="verdict-icon" id="verdict-icon">✓</span>
+            <span class="verdict-title" id="verdict-chip"></span>
+          </div>
+          <div class="verdict-bar-track">
+            <div class="verdict-bar-fill" id="verdict-bar-fill"></div>
+          </div>
+        </div>
 
         <div class="tiles">
           <div class="tile">
@@ -86,7 +95,13 @@
           <span id="booster-text"></span>
         </div>
 
-        <button class="cta ghost" id="btn-letter">Написать сопроводительное письмо</button>
+        <div class="letter-controls" style="margin-top:14px;">
+          <select id="letter-tone" style="margin-bottom:6px;">
+            <option value="neutral">Тон письма: Нейтрально-деловой</option>
+            <option value="confident">Тон письма: Уверенный (прямой/проактивный)</option>
+          </select>
+          <button class="cta ghost" id="btn-letter" style="margin-top:0;">Написать сопроводительное письмо</button>
+        </div>
         <div class="loading" id="letter-loading">
           <span id="letter-loading-label">Пишу письмо</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
@@ -96,6 +111,82 @@
         </div>
       </section>
 
+    </div>
+
+    <div class="tab-panel" data-tab="ats" hidden>
+      <section class="card card-primary">
+        <div class="card-head">
+          <span class="label">Точечный ATS-разбор вакансии</span>
+          <button class="linkbtn" id="btn-ats-reextract">обновить со страницы</button>
+        </div>
+
+        <div id="ats-history-select-wrap">
+          <div class="meta" style="margin-bottom:6px;">Выбери ранее проверенную вакансию из истории:</div>
+          <select id="ats-history-select" style="margin-bottom:8px;"></select>
+        </div>
+
+        <div id="ats-empty-history-notice" hidden class="meta" style="margin-bottom:8px; color:var(--amber-ink);">
+          В истории пока нет проверенных вакансий. Проверь вакансию во вкладке «Проверка» или вставь её текст вручную ниже:
+        </div>
+
+        <button class="linkbtn" id="btn-ats-toggle-manual" type="button" style="margin-bottom:8px; display:inline-block;">или вставить текст вакансии вручную ▾</button>
+
+        <div id="ats-manual-container" hidden style="margin-top:6px;">
+          <textarea id="ats-vacancy-text" rows="6" placeholder="Вставь полный текст вакансии вручную..."></textarea>
+        </div>
+
+        <button class="cta" id="btn-ats-check">Запустить ATS-разбор</button>
+        <div class="error" id="ats-error"></div>
+
+        <div class="booster" id="ats-no-resume-box" hidden style="flex-direction:column; align-items:stretch; background:var(--amber-pale); border:1px solid var(--amber); margin-top:10px;">
+          <div style="font-weight:700; color:var(--amber-ink); margin-bottom:4px;">Вставь текст резюме один раз — дальше будет переиспользован для всех вакансий</div>
+          <textarea id="ats-inline-resume" rows="6" placeholder="Вставь сюда полный текст своего резюме (с hh.ru/LinkedIn)..."></textarea>
+          <button class="cta" id="btn-save-inline-resume" style="margin-top:8px;">Сохранить резюме и продолжить</button>
+        </div>
+      </section>
+
+      <div class="loading" id="ats-loading">
+        <span id="ats-loading-label">Сравниваю резюме с вакансией</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+
+      <section class="card animate-in" id="ats-result" hidden>
+        <div class="card-head">
+          <span class="label">Результат ATS-сравнения</span>
+          <span class="mono muted" id="ats-result-id"></span>
+        </div>
+
+        <div class="tiles">
+          <div class="tile">
+            <div class="tile-num good" id="ats-hard-pct">—</div>
+            <div class="tile-label">Обязательные</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num mid" id="ats-nice-pct">—</div>
+            <div class="tile-label">Желательные</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="ats-score">—</div>
+            <div class="tile-label">Общий ATS Score</div>
+          </div>
+        </div>
+
+        <div class="error" id="ats-critical-gaps-box" hidden style="background:var(--red-pale); border-color:rgba(212,86,74,0.4); color:var(--red); margin-top:12px; display:block;">
+          <div style="font-weight:700; margin-bottom:4px;">⚠️ Критичные пробелы (блокируют фильтр):</div>
+          <ul class="list flags" id="ats-critical-gaps-list" style="margin:0; padding-left:18px;"></ul>
+          <p id="ats-honest-warning" style="margin:8px 0 0; font-size:12.5px; font-weight:600;"></p>
+        </div>
+
+        <div class="block-title">Обязательные требования вакансии</div>
+        <div class="ats-reqs-list" id="ats-hard-reqs-list"></div>
+
+        <div class="block-title">Желательные требования (Будет плюсом)</div>
+        <div class="ats-reqs-list" id="ats-nice-reqs-list"></div>
+
+        <div class="block-title">Рекомендуемые точечные правки в резюме</div>
+        <div id="ats-actionable-edits"></div>
+
+        <button class="cta ghost" id="btn-ats-run-fitcheck" style="margin-top:16px;">Также проверить общее соответствие (Fit-Check)</button>
+      </section>
     </div>
 
     <div class="tab-panel" data-tab="profile" hidden>
@@ -156,24 +247,40 @@
     <div class="tab-panel" data-tab="analytics" hidden>
       <section class="card">
         <div class="card-head">
-          <span class="label">Аналитика</span>
+          <span class="label">Аналитика использования</span>
         </div>
-        <div class="tiles">
+
+        <div class="tiles" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 8px;">
           <div class="tile">
-            <div class="tile-num" id="an-total">—</div>
-            <div class="tile-label">проверок</div>
+            <div class="tile-num" id="an-total-all">—</div>
+            <div class="tile-label">проверок (всего)</div>
           </div>
+          <div class="tile">
+            <div class="tile-num" id="an-total-recent">—</div>
+            <div class="tile-label">за 7 / 30 дней</div>
+          </div>
+        </div>
+
+        <div class="tiles" style="grid-template-columns: repeat(3, 1fr);">
           <div class="tile">
             <div class="tile-num" id="an-applied">—</div>
             <div class="tile-label">откликов</div>
           </div>
           <div class="tile">
             <div class="tile-num" id="an-avg">—</div>
-            <div class="tile-label">средний индекс</div>
+            <div class="tile-label">средний score</div>
+          </div>
+          <div class="tile">
+            <div class="tile-num" id="an-letters">—</div>
+            <div class="tile-label">писем создано</div>
           </div>
         </div>
 
         <div class="an-best" id="an-best" hidden></div>
+
+        <div class="block-title">Распределение по вердиктам</div>
+        <div class="an-verdict-breakdown" id="an-verdict-breakdown" style="margin-bottom: 12px;"></div>
+
         <div class="an-donut-row" id="an-donut-row">
           <div class="donut-wrap-outer">
             <svg id="an-donut" width="84" height="84" viewBox="0 0 42 42"></svg>
@@ -181,9 +288,14 @@
           </div>
           <div class="donut-legend" id="an-donut-legend"></div>
         </div>
+
+        <div class="block-title">Источники вакансий</div>
         <div class="an-breakdown" id="an-sources"></div>
 
-        <div class="block-title">Распределение по диапазонам</div>
+        <div class="block-title">Активность по неделям (последний месяц)</div>
+        <div id="an-weekly-chart" style="margin-top: 6px;"></div>
+
+        <div class="block-title">Распределение по диапазонам индекса</div>
         <div id="an-histogram"></div>
 
         <div class="block-title">Тренд индекса</div>

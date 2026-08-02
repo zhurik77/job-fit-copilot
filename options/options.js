@@ -21,12 +21,13 @@
   }
 
   async function load() {
-    const { apiKeys, model, letterLang } = await chrome.storage.local.get(['apiKeys', 'model', 'letterLang']);
+    const { apiKeys, model, letterLang, fullResumeText } = await chrome.storage.local.get(['apiKeys', 'model', 'letterLang', 'fullResumeText']);
     for (const key of Object.keys(apiKeyInputs)) {
       apiKeyInputs[key].value = (apiKeys && apiKeys[key]) || '';
     }
     modelSelect.value = model || DEFAULT_MODEL;
     langSelect.value = letterLang || 'auto';
+    if ($('opt-full-resume')) $('opt-full-resume').value = fullResumeText || '';
   }
 
   $('opt-toggle-key').addEventListener('click', (e) => {
@@ -42,10 +43,12 @@
     try {
       const apiKeys = {};
       for (const key of Object.keys(apiKeyInputs)) apiKeys[key] = apiKeyInputs[key].value.trim();
+      const fullResumeText = $('opt-full-resume') ? $('opt-full-resume').value.trim() : '';
       await chrome.storage.local.set({
         apiKeys,
         model: modelSelect.value,
-        letterLang: langSelect.value
+        letterLang: langSelect.value,
+        fullResumeText
       });
       flashButton(saveBtn, 'Сохранено ✓');
     } catch (err) {
