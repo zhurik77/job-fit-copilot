@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Job Fit Copilot",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Оценка соответствия вакансии профилю кандидата и генерация сопроводительных писем (hh.ru, LinkedIn, Upwork).",
-  "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel", "tabs"],
   "host_permissions": [
     "https://*.hh.ru/*",
     "https://*.linkedin.com/*",

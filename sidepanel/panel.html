@@ -7,19 +7,14 @@
 </head>
 <body>
 
-  <header class="chrome">
-    <span class="chrome-dots"><i></i><i></i><i></i></span>
-    <span class="chrome-path">macuniverse.app / jfc / <span class="chrome-id" id="check-id">черновик</span></span>
-    <button class="chrome-settings" id="btn-settings" title="Настройки (API-ключ, профиль, язык писем)">⚙</button>
+  <header class="ios-nav" id="ios-nav">
+    <div class="ios-nav-top">
+      <span class="ios-nav-brand">macuniverse / jfc</span>
+      <span class="mono muted" id="check-id">v0.3.0</span>
+      <button class="ios-nav-settings" id="btn-settings" title="Настройки">⚙</button>
+    </div>
+    <h1 class="ios-large-title" id="ios-title">Fit-Check</h1>
   </header>
-
-  <nav class="tabbar" id="tabbar">
-    <button class="tab-btn active" data-tab="check" type="button">Проверка</button>
-    <button class="tab-btn" data-tab="ats" type="button">ATS-разбор</button>
-    <button class="tab-btn" data-tab="profile" type="button">Профиль</button>
-    <button class="tab-btn" data-tab="analytics" type="button">Аналитика</button>
-    <button class="tab-btn" data-tab="history" type="button">Журнал</button>
-  </nav>
 
   <main class="wrap">
 
@@ -220,8 +215,9 @@
         <div class="loading" id="resume-review-loading">
           <span id="resume-review-loading-label">Оцениваю</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
-        <div id="resume-review-result" hidden>
-          <div class="block-title">Оценка резюме</div>
+        <div id="resume-review-result" hidden class="animate-in">
+          <div class="block-title">Результаты глубокого ATS-аудита</div>
+          
           <div class="rr-score-row">
             <div class="gauge">
               <svg viewBox="0 0 76 76" class="gauge-svg">
@@ -230,16 +226,56 @@
               </svg>
               <div class="gauge-num" id="rr-score">—</div>
             </div>
-            <span class="tile-label">/ 100 · сила резюме</span>
+            <div>
+              <div style="font-weight:700; font-size:15px; color:var(--ink);">Общий ATS Score</div>
+              <div class="meta" id="rr-progress-delta">Сравнение с прошлым аудитом появится при повторном запуске</div>
+            </div>
           </div>
-          <div class="ledger" id="rr-ledger"></div>
-          <p class="reasoning" id="rr-reasoning"></p>
-          <div class="block-title">Сильные стороны</div>
-          <ul class="list selling" id="rr-strengths"></ul>
-          <div class="block-title">Слабые места</div>
-          <ul class="list flags" id="rr-gaps"></ul>
-          <div class="block-title">Что поправить</div>
-          <ul class="list selling" id="rr-actions"></ul>
+
+          <div class="block-title">Взвешенная оценка составляющих</div>
+          <div class="tiles" style="grid-template-columns: repeat(2, 1fr); margin-bottom:8px;">
+            <div class="tile">
+              <div class="tile-num" id="rr-sub-keywords">—</div>
+              <div class="tile-label">Ключевые слова (35%)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-num" id="rr-sub-structure">—</div>
+              <div class="tile-label">Структура/ATS (20%)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-num" id="rr-sub-experience">—</div>
+              <div class="tile-label">Релевантность (25%)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-num" id="rr-sub-metrics">—</div>
+              <div class="tile-label">Плотность метрик (20%)</div>
+            </div>
+          </div>
+
+          <div id="rr-score-issues-wrap" style="margin-bottom:10px;"></div>
+
+          <div class="block-title">Value Proposition (Ценность кандидата)</div>
+          <p class="reasoning" id="rr-val-prop"></p>
+
+          <div class="block-title">Построчный разбор опыта (активные глаголы)</div>
+          <div id="rr-experience-breakdown" style="margin-bottom:10px;"></div>
+
+          <div class="block-title">Факторы ранжирования hh.ru</div>
+          <div id="rr-hh-ranking" class="card" style="background:var(--paper); padding:10px; margin-bottom:10px;"></div>
+
+          <div class="block-title">Подходящие должности (Топ-20 ролей: 8/7/5)</div>
+          <div id="rr-target-roles" style="margin-bottom:10px;"></div>
+
+          <div class="block-title">Карта ATS-ключевых слов по кластерам</div>
+          <div id="rr-keyword-matrix" style="margin-bottom:10px;"></div>
+
+          <div class="block-title">Чек-лист оптимизации (5 действий)</div>
+          <div id="rr-checklist" style="margin-bottom:10px;"></div>
+
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+            <button class="cta" id="btn-export-ats-report" type="button">Открыть полный отчёт (в новой вкладке)</button>
+            <button class="cta ghost" id="btn-download-ats-report" type="button">Скачать отчёт (.html)</button>
+          </div>
         </div>
       </section>
     </div>
@@ -302,6 +338,11 @@
         <div class="an-sparkline-wrap">
           <svg id="an-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
         </div>
+
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+          <button class="cta" id="btn-export-analytics-report" type="button">Открыть полный отчёт по аналитике</button>
+          <button class="cta ghost" id="btn-download-analytics-report" type="button">Скачать отчёт по аналитике (.html)</button>
+        </div>
       </section>
     </div>
 
@@ -317,6 +358,29 @@
     </div>
 
   </main>
+
+  <nav class="ios-tabbar" id="tabbar">
+    <button class="ios-tab-item active" data-tab="check" type="button">
+      <svg class="ios-tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <span class="ios-tab-label">Проверка</span>
+    </button>
+    <button class="ios-tab-item" data-tab="ats" type="button">
+      <svg class="ios-tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      <span class="ios-tab-label">ATS-разбор</span>
+    </button>
+    <button class="ios-tab-item" data-tab="profile" type="button">
+      <svg class="ios-tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span class="ios-tab-label">Профиль</span>
+    </button>
+    <button class="ios-tab-item" data-tab="analytics" type="button">
+      <svg class="ios-tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span class="ios-tab-label">Аналитика</span>
+    </button>
+    <button class="ios-tab-item" data-tab="history" type="button">
+      <svg class="ios-tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <span class="ios-tab-label">Журнал</span>
+    </button>
+  </nav>
 
   <script src="../shared/constants.js"></script>
   <script src="panel.js"></script>

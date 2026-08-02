@@ -183,7 +183,7 @@ async function writeLetter(vacancy, profile, sellingPoints, lang, tone, flags) {
 
 async function reviewResume(profile) {
   const user = 'Резюме кандидата:\n' + profile;
-  const res = await callProvider(JFC.RESUME_REVIEW_SYSTEM_PROMPT, user, 2500);
+  const res = await callProvider(JFC.RESUME_REVIEW_SYSTEM_PROMPT, user, 3800);
   if (!res.ok) return res;
 
   const raw = extractText(res).replace(/```json|```/g, '').trim();

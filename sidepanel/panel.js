@@ -394,16 +394,172 @@
     }
   });
 
-  function renderResumeReview(parsed) {
-    const score = computeScore(parsed);
-    setGauge('rr-score', 'rr-score-arc', score, score >= 70 ? 'good' : score >= 45 ? 'mid' : 'bad');
+  let lastAtsAuditResult = null;
 
-    renderLedgerInto($('rr-ledger'), parsed.ledger, score, 'итог');
+  async function renderResumeReview(parsed) {
+    lastAtsAuditResult = parsed;
 
-    $('rr-reasoning').textContent = parsed.reasoning || '';
-    fillList($('rr-strengths'), parsed.strengths);
-    fillList($('rr-gaps'), parsed.gaps);
-    fillList($('rr-actions'), parsed.action_items);
+    const overallScore = Math.round(Number(parsed.overall_ats_score) || computeScore(parsed) || 0);
+    setGauge('rr-score', 'rr-score-arc', overallScore, overallScore >= 75 ? 'good' : (overallScore >= 50 ? 'mid' : 'bad'));
+
+    // Progress delta tracking with previous audit
+    let progressDeltaText = 'Сравнение с прошлым аудитом появится при повторном запуске';
+    try {
+      const { ats_audit_history } = await chrome.storage.local.get('ats_audit_history');
+      const history = Array.isArray(ats_audit_history) ? ats_audit_history : [];
+      if (history.length > 0) {
+        const last = history[0];
+        const lastScore = Math.round(Number(last.overall_ats_score) || 0);
+        const diff = overallScore - lastScore;
+        const diffStr = diff > 0 ? `+${diff}%` : `${diff}%`;
+        progressDeltaText = `Динамика к прошлому аудиту: ${diffStr} (ранее: ${lastScore}%)`;
+      }
+      history.unshift({ date: new Date().toISOString(), overall_ats_score: overallScore, result: parsed });
+      await chrome.storage.local.set({ ats_audit_history: history.slice(0, 20) });
+    } catch (e) {
+      console.error('Audit history save failed', e);
+    }
+    if ($('rr-progress-delta')) $('rr-progress-delta').textContent = progressDeltaText;
+
+    // Sub-scores
+    const sb = parsed.score_breakdown || {};
+    if ($('rr-sub-keywords')) $('rr-sub-keywords').textContent = Math.round(sb.keyword_match_score || overallScore) + '%';
+    if ($('rr-sub-structure')) $('rr-sub-structure').textContent = Math.round(sb.structure_score || overallScore) + '%';
+    if ($('rr-sub-experience')) $('rr-sub-experience').textContent = Math.round(sb.experience_relevance_score || overallScore) + '%';
+    if ($('rr-sub-metrics')) $('rr-sub-metrics').textContent = Math.round(sb.metrics_density_score || overallScore) + '%';
+
+    // Sub-score Issues list
+    const issuesWrap = $('rr-score-issues-wrap');
+    if (issuesWrap) {
+      issuesWrap.innerHTML = '';
+      const issues = Array.isArray(sb.issues) ? sb.issues : [];
+      issues.forEach(is => {
+        const row = document.createElement('div');
+        row.className = 'ats-req-item';
+        row.style.marginBottom = '4px';
+        row.innerHTML = `<div class="ats-req-head"><span class="ats-req-title"><b>${is.area || 'Критерий'}:</b> ${is.issue || ''}</span></div><div class="meta" style="margin-top:2px;">Влияние: ${is.impact || ''}</div>`;
+        issuesWrap.appendChild(row);
+      });
+    }
+
+    // Value Prop
+    if ($('rr-val-prop')) $('rr-val-prop').textContent = parsed.value_proposition || parsed.reasoning || '';
+
+    // Experience breakdown rewrites
+    const expWrap = $('rr-experience-breakdown');
+    if (expWrap) {
+      expWrap.innerHTML = '';
+      const expList = Array.isArray(parsed.experience_breakdown) ? parsed.experience_breakdown : [];
+      if (!expList.length && Array.isArray(parsed.action_items)) {
+        parsed.action_items.forEach(act => {
+          const card = document.createElement('div');
+          card.className = 'ats-edit-card';
+          card.innerHTML = `<div class="ats-edit-text">${act}</div>`;
+          expWrap.appendChild(card);
+        });
+      } else {
+        expList.forEach(exp => {
+          const card = document.createElement('div');
+          card.className = 'ats-edit-card';
+          card.innerHTML = `
+            <div class="ats-edit-section">${exp.company || 'Компания / Опыт'}</div>
+            <div class="ats-edit-gap" style="color:var(--red);">Проблема: ${Array.isArray(exp.issues) ? exp.issues.join('; ') : (exp.issues || '')}</div>
+            <div class="ats-edit-text" style="color:var(--green-hover);"><b>Переформулировка:</b> ${exp.suggested_rewrite || ''}</div>
+          `;
+          expWrap.appendChild(card);
+        });
+      }
+    }
+
+    // hh.ru ranking factors
+    const hhBox = $('rr-hh-ranking');
+    if (hhBox) {
+      const hh = parsed.hh_ranking_factors || {};
+      hhBox.innerHTML = `
+        <div style="font-size:12.5px; line-height:1.5;">
+          <div><b>Обновление:</b> ${hh.last_update || 'не зафиксировано'}</div>
+          <div><b>Статус поиска:</b> ${hh.search_status || 'не зафиксировано'}</div>
+          <div><b>Плотность превью:</b> ${hh.card_preview_density || 'средняя'}</div>
+          ${hh.notes ? `<div class="meta" style="margin-top:4px;">${hh.notes}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // Target roles (Top 20 roles: 8 core / 7 transferable / 5 growth)
+    const rolesWrap = $('rr-target-roles');
+    if (rolesWrap) {
+      rolesWrap.innerHTML = '';
+      const roles = parsed.target_roles || {};
+      const categories = [
+        { key: 'core', title: 'Core (Прямое попадание — 8)', color: 'chip-good' },
+        { key: 'transferable', title: 'Transferable (Смежные навыки — 7)', color: 'chip-mid' },
+        { key: 'growth', title: 'Growth (Рост / Смена вектора — 5)', color: 'chip-neutral' }
+      ];
+      categories.forEach(cat => {
+        const list = Array.isArray(roles[cat.key]) ? roles[cat.key] : [];
+        if (!list.length) return;
+        const groupHead = document.createElement('div');
+        groupHead.style.cssText = 'font-weight:700; font-size:13px; margin:8px 0 4px; color:var(--ink);';
+        groupHead.textContent = cat.title;
+        rolesWrap.appendChild(groupHead);
+
+        list.forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'ats-req-item';
+          row.style.marginBottom = '4px';
+          row.innerHTML = `
+            <div class="ats-req-head">
+              <span class="ats-req-title"><b>${r.title_ru || ''}</b> / ${r.title_en || ''}</span>
+              <span class="chip chip-mini ${cat.color}">${r.match_percent || 0}%</span>
+            </div>
+            <div class="meta" style="margin-top:2px;">${r.reasoning || ''}</div>
+          `;
+          rolesWrap.appendChild(row);
+        });
+      });
+    }
+
+    // Keyword Matrix by Clusters
+    const kwWrap = $('rr-keyword-matrix');
+    if (kwWrap) {
+      kwWrap.innerHTML = '';
+      const matrix = parsed.keyword_matrix || {};
+      ['core', 'transferable', 'growth'].forEach(clusterKey => {
+        const cluster = matrix[clusterKey];
+        if (!cluster) return;
+        const block = document.createElement('div');
+        block.className = 'card';
+        block.style.cssText = 'background:var(--paper); padding:10px; margin-bottom:8px;';
+        const clusterTitle = clusterKey === 'core' ? 'Кластер: Core' : (clusterKey === 'transferable' ? 'Кластер: Transferable' : 'Кластер: Growth');
+        block.innerHTML = `
+          <div style="font-weight:700; font-size:13px; margin-bottom:6px; color:var(--ink);">${clusterTitle}</div>
+          <div style="margin-bottom:4px;"><b>Hard Skills & Tools:</b> <span class="meta">${(cluster.hard_skills_tools || []).join(', ')}</span></div>
+          <div style="margin-bottom:4px;"><b>Домен & Методологии:</b> <span class="meta">${(cluster.domain_methodology || []).join(', ')}</span></div>
+          <div><b>Активные глаголы:</b> <span class="meta">${(cluster.action_verbs || []).join(', ')}</span></div>
+        `;
+        kwWrap.appendChild(block);
+      });
+    }
+
+    // Optimization Checklist (5 items)
+    const checkWrap = $('rr-checklist');
+    if (checkWrap) {
+      checkWrap.innerHTML = '';
+      const checklist = Array.isArray(parsed.optimization_checklist) ? parsed.optimization_checklist : [];
+      checklist.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'ats-req-item';
+        card.style.marginBottom = '4px';
+        card.innerHTML = `
+          <div class="ats-req-head">
+            <span class="ats-req-title"><b>Шаг ${idx + 1}:</b> ${item.action || ''}</span>
+            <span class="chip chip-mini chip-mid">${item.target_section || 'Раздел'}</span>
+          </div>
+          <div class="meta" style="margin-top:2px;"><b>Зачем:</b> ${item.why || ''}</div>
+        `;
+        checkWrap.appendChild(card);
+      });
+    }
 
     $('resume-review-result').hidden = false;
   }
@@ -1443,24 +1599,102 @@
     });
   }
 
+  // ---------- Экспорт отчётов в отдельную вкладку / файл ----------
+
+  function openReportInNewTab(htmlContent) {
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    if (chrome.tabs && chrome.tabs.create) {
+      chrome.tabs.create({ url });
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  function downloadReport(htmlContent, filename) {
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  if ($('btn-export-ats-report')) {
+    $('btn-export-ats-report').addEventListener('click', () => {
+      if (!lastAtsAuditResult) {
+        showError('Сначала запусти оценку резюме во вкладке «Профиль».');
+        return;
+      }
+      const html = buildAtsAuditReportHtml(lastAtsAuditResult, 'Основной профиль');
+      openReportInNewTab(html);
+    });
+  }
+
+  if ($('btn-download-ats-report')) {
+    $('btn-download-ats-report').addEventListener('click', () => {
+      if (!lastAtsAuditResult) {
+        showError('Сначала запусти оценку резюме во вкладке «Профиль».');
+        return;
+      }
+      const html = buildAtsAuditReportHtml(lastAtsAuditResult, 'Основной профиль');
+      const filename = `job-fit-copilot-ats-audit-${new Date().toISOString().slice(0, 10)}.html`;
+      downloadReport(html, filename);
+    });
+  }
+
+  if ($('btn-export-analytics-report')) {
+    $('btn-export-analytics-report').addEventListener('click', async () => {
+      const { history } = await chrome.storage.local.get('history');
+      const items = Array.isArray(history) ? history : [];
+      const html = buildAnalyticsReportHtml(items);
+      openReportInNewTab(html);
+    });
+  }
+
+  if ($('btn-download-analytics-report')) {
+    $('btn-download-analytics-report').addEventListener('click', async () => {
+      const { history } = await chrome.storage.local.get('history');
+      const items = Array.isArray(history) ? history : [];
+      const html = buildAnalyticsReportHtml(items);
+      const filename = `job-fit-copilot-analytics-${new Date().toISOString().slice(0, 10)}.html`;
+      downloadReport(html, filename);
+    });
+  }
+
   // ---------- настройки ----------
 
   $('btn-settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
   openSettingsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
-  // ---------- табы ----------
+  // ---------- табы (iOS Navigation Bar & Bottom Tab Bar) ----------
+
+  const TAB_TITLES = {
+    check: 'Fit-Check',
+    ats: 'ATS-разбор',
+    profile: 'Профиль кандидата',
+    analytics: 'Аналитика',
+    history: 'Журнал проверок'
+  };
 
   function activateTab(name) {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.ios-tab-item, .tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === name);
     });
     document.querySelectorAll('.tab-panel').forEach(panel => {
       panel.hidden = panel.dataset.tab !== name;
     });
+    const titleEl = $('ios-title');
+    if (titleEl && TAB_TITLES[name]) {
+      titleEl.textContent = TAB_TITLES[name];
+    }
   }
 
   function initTabs() {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.ios-tab-item, .tab-btn').forEach(btn => {
       btn.addEventListener('click', () => activateTab(btn.dataset.tab));
     });
   }

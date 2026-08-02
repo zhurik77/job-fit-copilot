@@ -1,13 +1,13 @@
-/* Job Fit Copilot — Apple macOS System Settings & HIG Aesthetic.
-   SF Pro typography + system accent (#FF9500) + backdrop blur + segmented control + semantic colors. */
+/* Job Fit Copilot — Apple iOS Mobile HIG Aesthetic (v0.3.0).
+   iOS systemGroupedBackground (#F2F2F7) + Bottom Tab Bar + Capsule Buttons + Grouped Lists + SF Pro. */
 :root {
-  --paper: #F6F6F6;
+  --paper: #F2F2F7;
   --card: #FFFFFF;
-  --field: #EFEFEF;
-  --line: rgba(0, 0, 0, 0.08);
-  --hairline: rgba(0, 0, 0, 0.06);
-  --ink: #1C1C1E;
-  --muted: #8E8E93;
+  --field: #E9E9EE;
+  --line: rgba(60, 60, 67, 0.12);
+  --hairline: rgba(60, 60, 67, 0.08);
+  --ink: #000000;
+  --muted: rgba(60, 60, 67, 0.6);
   --amber: #FF9500;
   --amber-hover: #E08300;
   --amber-ink: #C77300;
@@ -20,9 +20,9 @@
   --red: #FF3B30;
   --red-hover: #D73027;
   --red-pale: #FFEBEA;
-  --neutral-pale: #EAEAEB;
-  --chrome: rgba(28, 28, 30, 0.92);
-  --chrome-muted: #98989D;
+  --neutral-pale: #E5E5EA;
+  --chrome: rgba(246, 246, 246, 0.92);
+  --chrome-muted: #8E8E93;
   --mono: SFMono-Regular, ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
 
   /* Typography Scale System */
@@ -45,6 +45,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
   font-size: var(--fs-sm);
   line-height: 1.45;
+  padding-bottom: 70px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -61,106 +62,127 @@ body {
 }
 
 .animate-in {
-  animation: slideFadeIn 0.3s var(--spring-ease) forwards;
+  animation: slideFadeIn 0.28s var(--spring-ease) forwards;
 }
 
-/* ---------- тёмная chrome-полоса с размытием ---------- */
+/* ---------- iOS Navigation Bar (Large Title) ---------- */
 
-.chrome {
+.ios-nav {
   position: sticky;
   top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 38px;
-  padding: 0 12px;
-  background: var(--chrome);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 0 0 10px 10px;
-}
-
-.chrome-dots { display: flex; gap: 5px; flex: none; }
-.chrome-dots i { width: 8px; height: 8px; border-radius: 50%; display: block; }
-.chrome-dots i:nth-child(1) { background: #FF5F56; }
-.chrome-dots i:nth-child(2) { background: #FFBD2E; }
-.chrome-dots i:nth-child(3) { background: #27C93F; }
-
-.chrome-path {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: var(--fs-xs);
-  color: var(--chrome-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.chrome-path .chrome-id { color: var(--amber); font-weight: 700; }
-
-.chrome-settings {
-  flex: none;
-  background: none;
-  border: none;
-  color: var(--chrome-muted);
-  font-size: var(--fs-md);
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 6px;
-  line-height: 1;
-  transition: color 0.2s var(--spring-ease), background 0.2s var(--spring-ease);
-}
-.chrome-settings:hover { color: var(--amber); background: rgba(255, 255, 255, 0.12); }
-.chrome-settings:active { transform: scale(0.95); }
-
-/* ---------- macOS Segmented Control ---------- */
-
-.tabbar {
-  position: sticky;
-  top: 38px;
-  z-index: 15;
-  display: flex;
-  gap: 2px;
-  background: rgba(235, 235, 240, 0.85);
+  z-index: 30;
+  background: rgba(246, 246, 246, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--line);
-  padding: 4px;
-  margin: 6px 12px;
-  border-radius: 9px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  padding: 8px 14px 10px;
 }
-.tab-btn {
+
+.ios-nav-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 22px;
+}
+
+.ios-nav-brand {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.ios-nav-settings {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px 4px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.2s var(--spring-ease);
+}
+.ios-nav-settings:hover { color: var(--amber); }
+.ios-nav-settings:active { transform: scale(0.92); }
+
+.ios-large-title {
+  margin: 4px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  transition: font-size 0.2s var(--spring-ease);
+}
+
+/* ---------- iOS Bottom Tab Bar Navigation ---------- */
+
+.ios-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 56px;
+  background: rgba(246, 246, 246, 0.94);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-top: 1px solid rgba(60, 60, 67, 0.12);
+  padding: 4px 6px;
+}
+
+.ios-tab-item {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   background: transparent;
   border: none;
-  border-radius: 7px;
-  padding: 5px 4px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
+  color: rgba(60, 60, 67, 0.6);
   cursor: pointer;
-  transition: all 0.25s var(--spring-ease);
-  text-align: center;
-  white-space: nowrap;
+  padding: 4px 0;
+  transition: color 0.2s var(--spring-ease);
 }
-.tab-btn:hover { color: var(--ink); }
-.tab-btn:active { transform: scale(0.97); }
-.tab-btn.active {
-  background: #FFFFFF;
-  color: var(--ink);
+
+.ios-tab-item:active { transform: scale(0.92); }
+
+.ios-tab-item.active {
+  color: var(--amber);
+}
+
+.ios-tab-icon {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.2s var(--spring-ease);
+}
+
+.ios-tab-item.active .ios-tab-icon {
+  transform: scale(1.06);
+}
+
+.ios-tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.ios-tab-item.active .ios-tab-label {
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.08);
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .tab-btn { transition: none; }
+  .ios-tab-item { transition: none; }
   .animate-in { animation: none; }
 }
 
 /* ---------- каркас и слоистость карточек ---------- */
 
-.wrap { padding: 8px 12px 40px; }
+.wrap { padding: 10px 12px 30px; }
 
 /* Вспомогательные карточки */
 .card {
@@ -256,29 +278,31 @@ select:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px 
 .cta {
   width: 100%;
   background: var(--amber);
-  color: var(--ink);
+  color: #FFFFFF;
   border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-weight: 700;
-  font-size: var(--fs-sm);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 600;
+  font-size: 14.5px;
   cursor: pointer;
   margin-top: 10px;
-  transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
-  box-shadow: 0 2px 6px rgba(242, 163, 60, 0.25);
+  transition: all 0.2s var(--spring-ease);
+  box-shadow: 0 2px 8px rgba(255, 149, 0, 0.25);
 }
-.cta:hover { background: var(--amber-hover); box-shadow: 0 4px 12px rgba(242, 163, 60, 0.35); }
-.cta:active { transform: scale(0.98); }
-.cta:disabled { opacity: 0.55; cursor: default; box-shadow: none; transform: none; }
+.cta:hover { background: var(--amber-hover); box-shadow: 0 4px 14px rgba(255, 149, 0, 0.35); }
+.cta:active { transform: scale(0.97); opacity: 0.9; }
+.cta:disabled { opacity: 0.5; cursor: default; box-shadow: none; transform: none; }
 
 .cta.ghost {
-  background: var(--card);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  box-shadow: 0 1px 2px rgba(26, 23, 19, 0.03);
+  background: transparent;
+  color: var(--amber);
+  border: none;
+  border-radius: 999px;
+  font-weight: 600;
+  box-shadow: none;
 }
-.cta.ghost:hover { border-color: var(--amber); background: var(--field); box-shadow: 0 2px 6px rgba(26, 23, 19, 0.06); }
-.cta.ghost:active { transform: scale(0.98); }
+.cta.ghost:hover { background: rgba(255, 149, 0, 0.08); }
+.cta.ghost:active { transform: scale(0.97); }
 
 /* ---------- чипы ---------- */
 
