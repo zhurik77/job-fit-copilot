@@ -10,7 +10,7 @@
   <header class="ios-nav" id="ios-nav">
     <div class="ios-nav-top">
       <span class="ios-nav-brand">macuniverse / jfc</span>
-      <span class="mono muted" id="check-id">v0.3.0</span>
+      <span class="mono muted" id="check-id"></span>
       <button class="ios-nav-settings" id="btn-settings" title="Настройки">⚙</button>
     </div>
     <h1 class="ios-large-title" id="ios-title">Fit-Check</h1>
@@ -368,28 +368,26 @@
         <div class="an-best" id="an-best" hidden></div>
 
         <div class="block-title">Распределение по вердиктам</div>
-        <div class="donut-wrap" id="an-donut-wrap" style="margin-top:8px;">
-          <svg viewBox="0 0 120 120" class="donut-svg">
-            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="12" />
-            <circle class="donut-segment" cx="60" cy="60" r="52" />
-            <circle class="donut-segment" cx="60" cy="60" r="52" />
-            <circle class="donut-segment" cx="60" cy="60" r="52" />
-          </svg>
+        <div class="an-donut-row" id="an-donut-row" style="display:flex; align-items:center; gap:14px; margin-top:8px;">
+          <div class="donut-wrap" id="an-donut-wrap" style="position:relative; width:84px; height:84px; flex:none;">
+            <svg viewBox="0 0 42 42" width="84" height="84" id="an-donut"></svg>
+            <div class="donut-total" id="an-donut-total" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;"></div>
+          </div>
+          <div class="donut-legend" id="an-donut-legend" style="flex:1;"></div>
         </div>
-        <div class="donut-legend" id="an-donut-legend"></div>
 
         <div class="block-title">Источники вакансий</div>
         <div class="an-breakdown" id="an-sources"></div>
+
+        <div class="block-title">Активность по неделям (последний месяц)</div>
+        <div id="an-weekly-chart" style="margin-top: 6px;"></div>
 
         <div class="block-title">Распределение по диапазонам индекса</div>
         <div id="an-histogram"></div>
 
         <div class="block-title">Тренд индекса совпадений</div>
-        <div class="sparkline-box">
-          <svg class="sparkline" viewBox="0 0 280 60" id="an-sparkline-svg">
-            <path class="sparkline-area" id="an-spark-area" />
-            <path class="sparkline-line" id="an-spark-line" />
-          </svg>
+        <div class="sparkline-box" style="margin-top:6px;">
+          <svg class="sparkline" viewBox="0 0 300 80" preserveAspectRatio="none" id="an-sparkline" style="width:100%; height:70px; display:block;"></svg>
         </div>
 
         <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">

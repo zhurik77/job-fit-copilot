@@ -1227,6 +1227,7 @@
   // если для этой записи сохранён result (старые записи без него — просто инфо).
   function renderBestResult(items) {
     const el = $('an-best');
+    if (!el) return;
     if (!items.length) {
       el.hidden = true;
       el.replaceChildren();
@@ -1320,19 +1321,21 @@
     const svg = $('an-donut');
     const legend = $('an-donut-legend');
     const totalEl = $('an-donut-total');
-    svg.innerHTML = '';
-    legend.innerHTML = '';
-    totalEl.innerHTML = '';
-    if (!total) return; // пустая история — донат остаётся пустым, без визуального мусора
+    if (svg) svg.innerHTML = '';
+    if (legend) legend.innerHTML = '';
+    if (totalEl) totalEl.innerHTML = '';
+    if (!total || !svg) return; // пустая история — донат остаётся пустым, без визуального мусора
 
-    const numEl = document.createElement('div');
-    numEl.className = 'num';
-    numEl.textContent = String(total);
-    const lblEl = document.createElement('div');
-    lblEl.className = 'lbl';
-    lblEl.textContent = 'всего';
-    totalEl.appendChild(numEl);
-    totalEl.appendChild(lblEl);
+    if (totalEl) {
+      const numEl = document.createElement('div');
+      numEl.className = 'num';
+      numEl.textContent = String(total);
+      const lblEl = document.createElement('div');
+      lblEl.className = 'lbl';
+      lblEl.textContent = 'всего';
+      totalEl.appendChild(numEl);
+      totalEl.appendChild(lblEl);
+    }
 
     const ns = 'http://www.w3.org/2000/svg';
     const track = document.createElementNS(ns, 'circle');

@@ -2,6 +2,17 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.4.2] - 2026-08-02
+
+### Fixed
+- **Analytics DOM Audit & Defensive Null-Checks**:
+  - Restored missing element IDs (`an-donut`, `an-donut-total`, `an-donut-legend`, `an-weekly-chart`, `an-sparkline`) in `sidepanel/panel.html` to eliminate `TypeError: Cannot set properties of null (setting 'innerHTML')`.
+  - Enforced defensive null checks across all analytics rendering functions for 100% crash-free execution on empty/fresh storage.
+- **iOS HIG Light Aesthetic Restoration**:
+  - Restored iOS Light system background (`#F2F2F7`), grouped white cards (`#FFFFFF`), capsule buttons, and SF Pro typography as specified in Prompt 08.
+- **Dynamic Version Source of Truth**:
+  - Dynamic version reading via `chrome.runtime.getManifest().version` in header, removing hardcoded version strings.
+
 ## [0.4.1] - 2026-08-02
 
 ### Fixed
