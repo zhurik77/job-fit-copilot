@@ -5,14 +5,14 @@
   </picture>
 </p>
 
-<h1 align="center">Job Fit Copilot v0.3.1</h1>
+<h1 align="center">Job Fit Copilot v0.3.2</h1>
 <p align="center">
   > AI-ассистент для проверки соответствия вакансий, глубокого ATS-анализа резюме, мульти-резюме сравнения и генерации сопроводительных писем — прямо в браузере.<br>
   hh.ru · LinkedIn · Upwork · DeepSeek V4 Flash / GLM-5.2 / GPT-4.1 / Claude Sonnet 4.6 — свой ключ, без бэкенда.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.3.1-FF9500" alt="Version: 0.3.1">
+  <img src="https://img.shields.io/badge/version-0.3.2-FF9500" alt="Version: 0.3.2">
   <img src="https://img.shields.io/badge/license-MIT-4A7FD4" alt="License: MIT">
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
   <img src="https://img.shields.io/badge/design-iOS%20HIG-FF9500" alt="Design: iOS HIG">

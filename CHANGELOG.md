@@ -2,6 +2,12 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.3.2] - 2026-08-02
+
+### Added
+- **Dark Mode iOS Glassmorphism UI Theme**:
+  - Synchronized extension UI aesthetics with deep OLED dark mode canvas (`#000000`), grouped card backgrounds (`#1C1C1E` / `#2C2C2E`), translucent glassmorphism navigation headers (`backdrop-filter: blur(20px)`), glowing gauge arcs, and crisp high-contrast SF Pro typography matching repository UI mockups.
+
 ## [0.3.1] - 2026-08-02
 
 ### Added

@@ -1,27 +1,28 @@
 /* Job Fit Copilot — Apple iOS Mobile HIG Aesthetic (v0.3.0).
    iOS systemGroupedBackground (#F2F2F7) + Bottom Tab Bar + Capsule Buttons + Grouped Lists + SF Pro. */
 :root {
-  --paper: #F2F2F7;
-  --card: #FFFFFF;
-  --field: #E9E9EE;
-  --line: rgba(60, 60, 67, 0.12);
-  --hairline: rgba(60, 60, 67, 0.08);
-  --ink: #000000;
-  --muted: rgba(60, 60, 67, 0.6);
+  --paper: #000000;
+  --card: #1C1C1E;
+  --card-primary: #2C2C2E;
+  --field: #2C2C2E;
+  --line: rgba(255, 255, 255, 0.12);
+  --hairline: rgba(255, 255, 255, 0.08);
+  --ink: #FFFFFF;
+  --muted: #8E8E93;
   --amber: #FF9500;
-  --amber-hover: #E08300;
-  --amber-ink: #C77300;
-  --amber-pale: #FFF4E5;
+  --amber-hover: #FF9F0A;
+  --amber-ink: #FF9500;
+  --amber-pale: rgba(255, 149, 0, 0.16);
   --green: #34C759;
-  --green-hover: #2DA84E;
-  --green-pale: #EAF8ED;
-  --blue: #007AFF;
-  --blue-pale: #E5F1FF;
+  --green-hover: #30D158;
+  --green-pale: rgba(52, 199, 89, 0.16);
+  --blue: #0A84FF;
+  --blue-pale: rgba(10, 132, 255, 0.16);
   --red: #FF3B30;
-  --red-hover: #D73027;
-  --red-pale: #FFEBEA;
-  --neutral-pale: #E5E5EA;
-  --chrome: rgba(246, 246, 246, 0.92);
+  --red-hover: #FF453A;
+  --red-pale: rgba(255, 59, 48, 0.16);
+  --neutral-pale: rgba(255, 255, 255, 0.1);
+  --chrome: rgba(28, 28, 30, 0.90);
   --chrome-muted: #8E8E93;
   --mono: SFMono-Regular, ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
 
@@ -71,7 +72,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(246, 246, 246, 0.88);
+  background: rgba(28, 28, 30, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--line);
@@ -127,10 +128,10 @@ body {
   justify-content: space-around;
   align-items: center;
   height: 56px;
-  background: rgba(246, 246, 246, 0.94);
+  background: rgba(28, 28, 30, 0.94);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-  border-top: 1px solid rgba(60, 60, 67, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding: 4px 6px;
 }
 
