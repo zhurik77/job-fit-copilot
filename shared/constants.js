@@ -213,7 +213,7 @@ ${toneInstruction}
       const validActiveId = (activeResumeId && savedResumes.some(r => r.id === activeResumeId))
         ? activeResumeId
         : savedResumes[0].id;
-      return { savedResumes, activeResumeId: validActiveId };
+      return { savedResumes, activeResumeId: validActiveId, profiles: savedResumes, activeProfileId: validActiveId };
     }
     const textToMigrate = (fullResumeText && fullResumeText.trim()) || (profile && profile.trim()) || DEFAULT_PROFILE;
     const seeded = [{
@@ -223,8 +223,9 @@ ${toneInstruction}
       updatedAt: Date.now()
     }];
     await chrome.storage.local.set({ savedResumes: seeded, activeResumeId: seeded[0].id });
-    return { savedResumes: seeded, activeResumeId: seeded[0].id };
+    return { savedResumes: seeded, activeResumeId: seeded[0].id, profiles: seeded, activeProfileId: seeded[0].id };
   }
+  const ensureProfiles = ensureSavedResumes;
 
   const ATS_MATCH_SYSTEM_PROMPT = `Сравни резюме кандидата с текстом конкретной вакансии. Раздели анализ на обязательные требования (из разделов вроде "Требования", "必须", явно сформулированных как обязательные) и желательные (из разделов "Будет плюсом", "Плюсом будет", "Приветствуется").
 
@@ -265,5 +266,5 @@ ${toneInstruction}
 Правило honesty_check обязательно для каждого actionable_edit — если не можешь подтвердить, что правка основана на реальных фактах резюме, не включай её в список вообще, а вместо этого добавь соответствующий пункт в critical_gaps.
 Если в вакансии нет явного разделения на обязательные и желательные требования, весь список считай обязательным (hard_requirements), а nice_to_have оставь пустым массивом.`;
 
-  globalThis.JFC = { PROVIDERS, MODELS, DEFAULT_MODEL, DEFAULT_PROFILE, FIT_CHECK_SYSTEM_PROMPT, RESUME_REVIEW_SYSTEM_PROMPT, ATS_MATCH_SYSTEM_PROMPT, letterPrompt, genId, ensureSavedResumes };
+  globalThis.JFC = { PROVIDERS, MODELS, DEFAULT_MODEL, DEFAULT_PROFILE, FIT_CHECK_SYSTEM_PROMPT, RESUME_REVIEW_SYSTEM_PROMPT, ATS_MATCH_SYSTEM_PROMPT, letterPrompt, genId, ensureSavedResumes, ensureProfiles };
 })();

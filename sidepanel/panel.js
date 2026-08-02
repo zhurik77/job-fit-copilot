@@ -1,6 +1,6 @@
 // Job Fit Copilot — логика side panel (редизайн 2026-07-27: ledger-разбор, вердикты-решения).
 (function () {
-  const { DEFAULT_PROFILE, MODELS, DEFAULT_MODEL, genId, ensureProfiles } = globalThis.JFC;
+  const { DEFAULT_PROFILE, MODELS, DEFAULT_MODEL, genId, ensureSavedResumes, ensureProfiles } = globalThis.JFC;
   const $ = id => document.getElementById(id);
 
   async function getActiveModelKey() {

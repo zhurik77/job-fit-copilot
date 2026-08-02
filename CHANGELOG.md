@@ -2,6 +2,11 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.4.1] - 2026-08-02
+
+### Fixed
+- **Backward Compatibility Alias (`ensureProfiles`)**: Added `ensureProfiles` export alias in `shared/constants.js` pointing to `ensureSavedResumes()` and ensuring return objects contain both `{ savedResumes, activeResumeId, profiles, activeProfileId }` to eliminate destructuring TypeErrors.
+
 ## [0.4.0] - 2026-08-02
 
 ### Added
