@@ -789,3 +789,104 @@ button.an-best { cursor: pointer; }
   border-radius: 6px;
   margin-bottom: 8px;
 }
+
+/* ---------- Компонент 1 & 1b: Ring Score (Single & Double Pair) ---------- */
+
+.ring-score { position: relative; width: 120px; height: 120px; margin: 0 auto; flex: none; }
+.ring-score svg { display: block; width: 100%; height: 100%; }
+.ring-score__track { fill: none; stroke: var(--line); stroke-width: 10; }
+.ring-score__fill {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.8s var(--spring-ease);
+}
+.ring-score__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-score__value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ring-pair { display: flex; gap: 16px; justify-content: center; align-items: flex-start; margin: 8px 0; }
+.ring-score--sm { width: 84px; height: 84px; }
+.ring-score--sm .ring-score__track { stroke-width: 7; }
+.ring-score--sm .ring-score__fill { stroke-width: 7; }
+.ring-score--sm .ring-score__value { font-size: 18px; }
+.ring-score__caption { text-align: center; font-size: 11px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+
+/* ---------- Компонент 2: Ledger Breakdown ---------- */
+
+.ledger-card { background: var(--card); border-radius: 14px; padding: 14px 16px; border: 1px solid var(--line); margin-bottom: 12px; }
+.ledger__title { font-size: 12px; font-weight: 700; margin-bottom: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ledger__row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--hairline); }
+.ledger__row:last-child { border-bottom: none; }
+.ledger__label { font-size: 13.5px; color: var(--ink); }
+.ledger__value { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14px; }
+.ledger__value--positive { color: var(--green); }
+.ledger__value--warning { color: var(--amber); }
+.ledger__value--negative { color: var(--red); }
+
+/* ---------- Компонент 3: Keyword Matrix ---------- */
+
+.kw-group { margin-bottom: 14px; }
+.kw-group__header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.kw-group__title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.kw-group__count { font-size: 11px; color: var(--muted); background: var(--field); padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+.kw-group__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.kw-pill { font-size: 12px; padding: 4px 10px; border-radius: 100px; background: var(--amber-pale); color: var(--amber); font-weight: 600; }
+.kw-pill.kw-pill--covered { background: var(--green-pale); color: var(--green); }
+.kw-pill.kw-pill--missing { background: var(--red-pale); color: var(--red); }
+
+/* ---------- Компонент 4: Actionable Edits ---------- */
+
+.edit-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.edit-card__section { font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+.edit-card__gap { font-size: 13px; color: var(--red); margin-bottom: 8px; font-weight: 600; }
+.edit-card__suggestion { font-size: 13.5px; line-height: 1.45; margin-bottom: 10px; color: var(--ink); }
+.edit-card__arrow { color: var(--amber); font-weight: 700; margin-right: 6px; }
+.edit-card__copy { width: 100%; padding: 9px 12px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); color: var(--ink); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s var(--spring-ease); }
+.edit-card__copy:active { transform: scale(0.97); }
+
+/* ---------- Компонент 5: Analytics Donut & Sparkline ---------- */
+
+.donut-wrap { position: relative; width: 120px; height: 120px; margin: 0 auto; flex: none; }
+.donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut-segment {
+  fill: none;
+  stroke-width: 12;
+  transition: stroke-dasharray 0.6s var(--spring-ease), stroke-dashoffset 0.6s var(--spring-ease);
+}
+.donut-legend { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.donut-legend-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--ink); }
+.donut-legend-left { display: flex; align-items: center; gap: 8px; }
+.donut-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+.sparkline-box { width: 100%; margin-top: 10px; }
+.sparkline { width: 100%; height: 60px; display: block; overflow: visible; }
+.sparkline-area { fill: var(--amber-pale); }
+.sparkline-line { fill: none; stroke: var(--amber); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Компонент 6: Top Vacancy Sources ---------- */
+
+.source-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hairline); }
+.source-row:last-child { border-bottom: none; }
+.source-row__icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.source-row__icon--hh { background: #D6001C; }
+.source-row__icon--linkedin { background: #0A66C2; }
+.source-row__icon--upwork { background: #14A800; }
+.source-row__name { font-size: 13px; width: 64px; flex-shrink: 0; color: var(--ink); font-weight: 600; }
+.source-row__bar { flex: 1; height: 6px; background: var(--field); border-radius: 100px; overflow: hidden; }
+.source-row__bar-fill { height: 100%; background: var(--amber); border-radius: 100px; transition: width 0.6s var(--spring-ease); }
+.source-row__pct { font-size: 12px; color: var(--muted); width: 36px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }

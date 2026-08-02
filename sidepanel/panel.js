@@ -37,6 +37,144 @@
     return new Promise(r => setTimeout(r, ms));
   }
 
+  // ---------- SVG/CSS Visual Components (v0.4.0) ----------
+
+  function getRingColors(score) {
+    if (score < 50) return ['#FF3B30', '#FF9500'];
+    if (score < 75) return ['#FF9500', '#FFCC00'];
+    return ['#34C759', '#30B0C7'];
+  }
+
+  function setRingScore(el, score) {
+    if (!el) return;
+    const circle = el.querySelector('.ring-score__fill');
+    const grad = el.querySelector('linearGradient');
+    const valEl = el.querySelector('.ring-score__value');
+    const r = circle ? (Number(circle.getAttribute('r')) || 52) : 52;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference * (1 - Math.max(0, Math.min(100, score)) / 100);
+
+    if (circle) {
+      circle.style.strokeDasharray = circumference;
+      circle.style.strokeDashoffset = offset;
+    }
+    if (grad) {
+      const [c1, c2] = getRingColors(score);
+      const stops = grad.querySelectorAll('stop');
+      if (stops.length >= 2) {
+        stops[0].setAttribute('stop-color', c1);
+        stops[1].setAttribute('stop-color', c2);
+      }
+    }
+    if (valEl) valEl.textContent = `${Math.round(score)}%`;
+  }
+
+  function ledgerColorClass(value) {
+    const val = Number(value) || 0;
+    if (val >= 80) return 'ledger__value--positive';
+    if (val >= 60) return 'ledger__value--warning';
+    return 'ledger__value--negative';
+  }
+
+  function renderLedgerBreakdown(container, sb) {
+    if (!container) return;
+    container.innerHTML = '';
+    const items = [
+      { label: 'Совпадение ключевых слов', val: Math.round(sb.keyword_match_score || 0) },
+      { label: 'Структура резюме', val: Math.round(sb.structure_score || 0) },
+      { label: 'Релевантность опыта', val: Math.round(sb.experience_relevance_score || 0) },
+      { label: 'Плотность метрик', val: Math.round(sb.metrics_density_score || 0) }
+    ];
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'ledger__row';
+      row.innerHTML = `
+        <span class="ledger__label">${it.label}</span>
+        <span class="ledger__value ${ledgerColorClass(it.val)}">${it.val}%</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function renderActionableEditsList(container, edits) {
+    if (!container) return;
+    container.innerHTML = '';
+    const list = Array.isArray(edits) ? edits : [];
+    if (!list.length) {
+      container.innerHTML = '<div class="meta">Все критичные требования покрыты, дополнительных правок не требуется.</div>';
+      return;
+    }
+    list.forEach(edit => {
+      const card = document.createElement('div');
+      card.className = 'edit-card';
+      const textToCopy = edit.suggested_text || '';
+      card.innerHTML = `
+        <div class="edit-card__section">Раздел: ${edit.resume_section || 'Общий'}</div>
+        <div class="edit-card__gap">Пробел: ${edit.current_gap || ''}</div>
+        <div class="edit-card__suggestion"><span class="edit-card__arrow">→</span>${textToCopy}</div>
+        <button class="edit-card__copy" type="button">Скопировать формулировку</button>
+      `;
+      const copyBtn = card.querySelector('.edit-card__copy');
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(textToCopy);
+        const old = copyBtn.textContent;
+        copyBtn.textContent = 'Скопировано ✓';
+        setTimeout(() => { copyBtn.textContent = old; }, 1400);
+      });
+      container.appendChild(card);
+    });
+  }
+
+  function renderVerdictDonutChart(el, counts) {
+    if (!el) return;
+    const r = 52, circumference = 2 * Math.PI * r;
+    const segments = [
+      { value: counts.fit || 0, color: '#34C759' },
+      { value: counts.borderline || 0, color: '#FF9500' },
+      { value: counts.skip || 0, color: '#FF3B30' },
+    ];
+    let offsetAccum = 0;
+    const circles = el.querySelectorAll('.donut-segment');
+    segments.forEach((seg, i) => {
+      if (circles[i]) {
+        const len = circumference * (seg.value / 100);
+        circles[i].setAttribute('stroke', seg.color);
+        circles[i].style.strokeDasharray = `${len} ${circumference - len}`;
+        circles[i].style.strokeDashoffset = -offsetAccum;
+        offsetAccum += len;
+      }
+    });
+  }
+
+  function renderSparklineChart(el, values) {
+    if (!el || !values.length) return;
+    const w = 280, h = 60, max = Math.max(...values, 1);
+    const step = w / Math.max(values.length - 1, 1);
+    const points = values.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 5) - 3).toFixed(1)}`);
+    const linePath = `M${points.join(' L')}`;
+    const areaPath = `${linePath} L${w},${h} L0,${h} Z`;
+    const area = el.querySelector('.sparkline-area');
+    const line = el.querySelector('.sparkline-line');
+    if (area) area.setAttribute('d', areaPath);
+    if (line) line.setAttribute('d', linePath);
+  }
+
+  function renderSourcesList(container, sources) {
+    if (!container) return;
+    container.innerHTML = '';
+    sources.forEach(src => {
+      const row = document.createElement('div');
+      row.className = 'source-row';
+      row.innerHTML = `
+        <div class="source-row__icon source-row__icon--${src.key}">${src.key}</div>
+        <span class="source-row__name">${src.name}</span>
+        <div class="source-row__bar"><div class="source-row__bar-fill" style="width: ${src.pct}%"></div></div>
+        <span class="source-row__pct">${src.pct}%</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
   // Отправка сообщения background.js с повтором при RATE_LIMIT (перегружен провайдер
   // выбранной модели) или PARSE_ERROR (модель обрезала/сломала JSON — часто
   // случайность, следующая попытка обычно проходит) и текстовым статусом

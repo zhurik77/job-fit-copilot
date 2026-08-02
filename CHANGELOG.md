@@ -2,6 +2,17 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.4.0] - 2026-08-02
+
+### Added
+- **Pure SVG/CSS MV3 Visual Components**:
+  - **Component 1 & 1b (Ring Progress & Double Pair)**: Dynamic SVG progress rings (`setRingScore`) with color range gradients (Red-Orange <50%, Orange-Yellow 50-74%, Green-Cyan ≥75%) and side-by-side Hard/Nice-to-have requirement coverage rings.
+  - **Component 2 (Ledger Breakdown)**: Structured score breakdown list for ATS Audit sub-scores with dynamic status colors (`ledgerColorClass`).
+  - **Component 3 (Keyword Matrix)**: Category-grouped skill badges with covered/missing status indicators for targeted ATS match.
+  - **Component 4 (Actionable Edits)**: Structured "Было → Стало" cards with instant one-click copy buttons.
+  - **Component 5 (Verdicts Donut & Weekly Sparkline)**: Multi-segment SVG donut chart for verdict distributions and pure SVG area-chart sparkline for match trends.
+  - **Component 6 (Top Vacancy Sources)**: Progress bars and branding icons for hh.ru (`#D6001C`), LinkedIn (`#0A66C2`), and Upwork (`#14A800`).
+
 ## [0.3.2] - 2026-08-02
 
 ### Added

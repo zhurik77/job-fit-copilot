@@ -52,17 +52,23 @@
           </div>
         </div>
 
-        <div class="tiles">
-          <div class="tile">
-            <div class="gauge">
-              <svg viewBox="0 0 76 76" class="gauge-svg">
-                <circle class="gauge-track" cx="38" cy="38" r="30"></circle>
-                <circle class="gauge-fill" id="tile-score-arc" cx="38" cy="38" r="30"></circle>
-              </svg>
-              <div class="gauge-num" id="tile-score">—</div>
-            </div>
-            <div class="tile-label">индекс</div>
+        <div class="ring-score" id="ring-fit-check" data-score="50" style="margin-bottom:12px;">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="52" class="ring-score__track" />
+            <circle class="ring-score__fill" id="tile-score-arc" cx="60" cy="60" r="52" />
+            <defs>
+              <linearGradient id="ringGradientFit" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34C759" />
+                <stop offset="100%" stop-color="#30B0C7" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="ring-score__label">
+            <span class="ring-score__value" id="tile-score">50%</span>
           </div>
+        </div>
+
+        <div class="tiles">
           <div class="tile">
             <div class="tile-num" id="tile-effort">—</div>
             <div class="tile-label">цена отклика</div>
@@ -164,19 +170,45 @@
           <span class="mono muted" id="ats-result-id"></span>
         </div>
 
-        <div class="tiles">
-          <div class="tile">
-            <div class="tile-num good" id="ats-hard-pct">—</div>
-            <div class="tile-label">Обязательные</div>
+        <div class="ring-pair">
+          <div class="ring-score ring-score--sm" id="ring-ats-hard" data-score="0">
+            <svg viewBox="0 0 84 84" width="84" height="84">
+              <circle cx="42" cy="42" r="36" class="ring-score__track" />
+              <circle class="ring-score__fill" id="ats-hard-arc" cx="42" cy="42" r="36" />
+              <defs>
+                <linearGradient id="ringGradientHard" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#34C759" />
+                  <stop offset="100%" stop-color="#30B0C7" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-score__label">
+              <span class="ring-score__value" id="ats-hard-pct">0%</span>
+            </div>
+            <div class="ring-score__caption">Обязательные</div>
           </div>
-          <div class="tile">
-            <div class="tile-num mid" id="ats-nice-pct">—</div>
-            <div class="tile-label">Желательные</div>
+
+          <div class="ring-score ring-score--sm" id="ring-ats-nice" data-score="0">
+            <svg viewBox="0 0 84 84" width="84" height="84">
+              <circle cx="42" cy="42" r="36" class="ring-score__track" />
+              <circle class="ring-score__fill" id="ats-nice-arc" cx="42" cy="42" r="36" />
+              <defs>
+                <linearGradient id="ringGradientNice" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FF9500" />
+                  <stop offset="100%" stop-color="#FFCC00" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-score__label">
+              <span class="ring-score__value" id="ats-nice-pct">0%</span>
+            </div>
+            <div class="ring-score__caption">Желательные</div>
           </div>
-          <div class="tile">
-            <div class="tile-num" id="ats-score">—</div>
-            <div class="tile-label">Общий ATS Score</div>
-          </div>
+        </div>
+
+        <div style="text-align:center; margin-bottom:10px;">
+          <span class="meta">Общий ATS Score: </span>
+          <span id="ats-score" style="font-weight:700; font-size:16px; color:var(--amber);">0%</span>
         </div>
 
         <div class="error" id="ats-critical-gaps-box" hidden style="background:var(--red-pale); border-color:rgba(212,86,74,0.4); color:var(--red); margin-top:12px; display:block;">
@@ -232,37 +264,44 @@
         <div id="resume-review-result" hidden class="animate-in">
           <div class="block-title">Результаты глубокого ATS-аудита</div>
           
-          <div class="rr-score-row">
-            <div class="gauge">
-              <svg viewBox="0 0 76 76" class="gauge-svg">
-                <circle class="gauge-track" cx="38" cy="38" r="30"></circle>
-                <circle class="gauge-fill" id="rr-score-arc" cx="38" cy="38" r="30"></circle>
-              </svg>
-              <div class="gauge-num" id="rr-score">—</div>
-            </div>
-            <div>
-              <div style="font-weight:700; font-size:15px; color:var(--ink);">Общий ATS Score</div>
-              <div class="meta" id="rr-progress-delta">Сравнение с прошлым аудитом появится при повторном запуске</div>
+          <div class="ring-score" id="ring-ats-audit" data-score="0" style="margin-bottom:12px;">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle cx="60" cy="60" r="52" class="ring-score__track" />
+              <circle class="ring-score__fill" id="rr-score-arc" cx="60" cy="60" r="52" />
+              <defs>
+                <linearGradient id="ringGradientAudit" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#34C759" />
+                  <stop offset="100%" stop-color="#30B0C7" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-score__label">
+              <span class="ring-score__value" id="rr-score">0%</span>
             </div>
           </div>
 
-          <div class="block-title">Взвешенная оценка составляющих</div>
-          <div class="tiles" style="grid-template-columns: repeat(2, 1fr); margin-bottom:8px;">
-            <div class="tile">
-              <div class="tile-num" id="rr-sub-keywords">—</div>
-              <div class="tile-label">Ключевые слова (35%)</div>
+          <div style="text-align:center; margin-bottom:14px;">
+            <div style="font-weight:700; font-size:15px; color:var(--ink);">Общий ATS Score</div>
+            <div class="meta" id="rr-progress-delta">Сравнение с прошлым аудитом появится при повторном запуске</div>
+          </div>
+
+          <div class="ledger-card">
+            <div class="ledger__title">Взвешенная оценка составляющих</div>
+            <div class="ledger__row">
+              <span class="ledger__label">Ключевые слова (35%)</span>
+              <span class="ledger__value" id="rr-sub-keywords">0%</span>
             </div>
-            <div class="tile">
-              <div class="tile-num" id="rr-sub-structure">—</div>
-              <div class="tile-label">Структура/ATS (20%)</div>
+            <div class="ledger__row">
+              <span class="ledger__label">Структура резюме (20%)</span>
+              <span class="ledger__value" id="rr-sub-structure">0%</span>
             </div>
-            <div class="tile">
-              <div class="tile-num" id="rr-sub-experience">—</div>
-              <div class="tile-label">Релевантность (25%)</div>
+            <div class="ledger__row">
+              <span class="ledger__label">Релевантность опыта (25%)</span>
+              <span class="ledger__value" id="rr-sub-experience">0%</span>
             </div>
-            <div class="tile">
-              <div class="tile-num" id="rr-sub-metrics">—</div>
-              <div class="tile-label">Плотность метрик (20%)</div>
+            <div class="ledger__row">
+              <span class="ledger__label">Плотность метрик (20%)</span>
+              <span class="ledger__value" id="rr-sub-metrics">0%</span>
             </div>
           </div>
 
@@ -329,28 +368,28 @@
         <div class="an-best" id="an-best" hidden></div>
 
         <div class="block-title">Распределение по вердиктам</div>
-        <div class="an-verdict-breakdown" id="an-verdict-breakdown" style="margin-bottom: 12px;"></div>
-
-        <div class="an-donut-row" id="an-donut-row">
-          <div class="donut-wrap-outer">
-            <svg id="an-donut" width="84" height="84" viewBox="0 0 42 42"></svg>
-            <div class="donut-total" id="an-donut-total"></div>
-          </div>
-          <div class="donut-legend" id="an-donut-legend"></div>
+        <div class="donut-wrap" id="an-donut-wrap" style="margin-top:8px;">
+          <svg viewBox="0 0 120 120" class="donut-svg">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="12" />
+            <circle class="donut-segment" cx="60" cy="60" r="52" />
+            <circle class="donut-segment" cx="60" cy="60" r="52" />
+            <circle class="donut-segment" cx="60" cy="60" r="52" />
+          </svg>
         </div>
+        <div class="donut-legend" id="an-donut-legend"></div>
 
         <div class="block-title">Источники вакансий</div>
         <div class="an-breakdown" id="an-sources"></div>
 
-        <div class="block-title">Активность по неделям (последний месяц)</div>
-        <div id="an-weekly-chart" style="margin-top: 6px;"></div>
-
         <div class="block-title">Распределение по диапазонам индекса</div>
         <div id="an-histogram"></div>
 
-        <div class="block-title">Тренд индекса</div>
-        <div class="an-sparkline-wrap">
-          <svg id="an-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
+        <div class="block-title">Тренд индекса совпадений</div>
+        <div class="sparkline-box">
+          <svg class="sparkline" viewBox="0 0 280 60" id="an-sparkline-svg">
+            <path class="sparkline-area" id="an-spark-area" />
+            <path class="sparkline-line" id="an-spark-line" />
+          </svg>
         </div>
 
         <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
