@@ -5,14 +5,14 @@
   </picture>
 </p>
 
-<h1 align="center">Job Fit Copilot v0.4.2</h1>
+<h1 align="center">Job Fit Copilot v0.4.3</h1>
 <p align="center">
   > AI-ассистент для проверки соответствия вакансий, глубокого ATS-анализа резюме, мульти-резюме сравнения и генерации сопроводительных писем — прямо в браузере.<br>
   hh.ru · LinkedIn · Upwork · DeepSeek V4 Flash / GLM-5.2 / GPT-4.1 / Claude Sonnet 4.6 — свой ключ, без бэкенда.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.4.2-FF9500" alt="Version: 0.4.2">
+  <img src="https://img.shields.io/badge/version-0.4.3-FF9500" alt="Version: 0.4.3">
   <img src="https://img.shields.io/badge/license-MIT-4A7FD4" alt="License: MIT">
   <img src="https://img.shields.io/badge/manifest-v3-F2A33C" alt="Manifest V3">
   <img src="https://img.shields.io/badge/design-iOS%20HIG-FF9500" alt="Design: iOS HIG">
@@ -31,7 +31,7 @@
   <a href="#экспорт-отчётов">Экспорт отчётов</a> ·
   <a href="#чем-отличается">Чем отличается</a> ·
   <a href="#стек">Стек</a> ·
-  <a href="#changelog">Changelog</a>
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 <p align="center">
@@ -74,17 +74,21 @@
 
 ### 📸 Интерфейс и режимы работы
 
+Ниже — реальные скриншоты вёрстки панели (iOS light-тема, ширина как у настоящего
+Chrome side panel), без постановочных AI-результатов: сам разбор появляется только
+после запроса к выбранной модели с вашим профилем и API-ключом.
+
 #### 1. Проверка соответствия вакансии (Fit-Check)
-![Fit-Check — Разбор по факторам и вердикт](docs/screenshot-fitcheck.jpg)
+![Fit-Check — интерфейс проверки вакансии](docs/screenshot-fitcheck.jpg)
 
-#### 2. Точечный ATS-разбор вакансии под сохранённые резюме
-![ATS-разбор вакансии под мульти-резюме](docs/screenshot-ats-match.jpg)
+#### 2. Точечный ATS-разбор вакансии под сохранённое резюме
+![ATS-разбор — выбор вакансии из истории и резюме для сравнения](docs/screenshot-ats-match.jpg)
 
-#### 3. Глубокий ATS-аудит кандидата (20 целевых ролей и 4 субоценки)
-![Глубокий ATS-аудит резюме](docs/screenshot-ats-audit.jpg)
+#### 3. Профиль кандидата — здесь запускается глубокий ATS-аудит резюме
+![Профиль кандидата — мульти-резюме и кнопка «Оценить резюме»](docs/screenshot-ats-audit.jpg)
 
-#### 4. Аналитика использования и экспорт автономных отчётов
-![Аналитика и экспорт отчётов](docs/screenshot-analytics.jpg)
+#### 4. Аналитика и экспорт отчётов
+![Аналитика — интерфейс метрик и кнопки экспорта отчёта](docs/screenshot-analytics.jpg)
 
 ---
 
@@ -125,10 +129,14 @@
 
 ## 📋 Чек-лист перед релизом
 
-- [x] Версия в `manifest.json`, `README.md` и `CHANGELOG.md` совпадает.
-- [x] `node -c` завершается без ошибок по всем JS-файлам.
-- [x] Автономный workflow `.github/workflows/release.yml` настроен.
-- [x] Донат-ссылка присутствует в шапке README: `https://www.tbank.ru/cf/1cYvs7KjikV`.
+- [ ] Версия в `manifest.json`, `README.md` и `CHANGELOG.md` совпадает.
+- [ ] `node --check` завершается без ошибок по всем JS-файлам.
+- [ ] Скриншоты в `docs/screenshot-*.jpg` — реальные захваты текущей вёрстки
+      (см. `tools/shot.js`), не сгенерированы AI и не устарели визуально.
+- [ ] Список в «Возможности» отражает все реализованные режимы, ничего лишнего.
+- [ ] Автономный workflow `.github/workflows/release.yml` реально отработал
+      без ошибок на последнем тег-пуше (вкладка Actions репозитория).
+- [ ] Донат-ссылка присутствует в шапке README: `https://www.tbank.ru/cf/1cYvs7KjikV`.
 
 ---
 

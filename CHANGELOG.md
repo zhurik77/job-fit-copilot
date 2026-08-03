@@ -2,6 +2,26 @@
 
 All notable changes to Job Fit Copilot will be documented in this file.
 
+## [0.4.3] - 2026-08-03
+
+### Fixed
+- **README screenshots were AI-generated fakes, not real captures**: replaced
+  `docs/screenshot-*.jpg` with genuine captures of the actual `sidepanel/panel.html`
+  markup/CSS (via `tools/shot.js`, headless Chromium at real side-panel width).
+  Captions rewritten to describe interface state honestly (no populated AI results,
+  since those require a live API key and real data).
+- **`.github/workflows/release.yml` failed on every single tag push** (verified:
+  v0.3.1 through v0.4.2, 100% failure rate) with `Resource not accessible by
+  integration` when generating release notes — the job had no explicit
+  `permissions: contents: write`, so the default `GITHUB_TOKEN` was read-only.
+  Added the missing permission block.
+- **Dynamic version display was documented in v0.4.2's changelog entry but never
+  actually implemented** — `chrome.runtime.getManifest().version` did not exist
+  anywhere in the codebase despite the claim. Implemented for real: new
+  `#app-version` element in `panel.html`, populated in `panel.js`.
+- `manifest.json` description was stale (only mentioned fit-check + letters,
+  not the ATS audit / multi-resume features that already existed).
+
 ## [0.4.2] - 2026-08-02
 
 ### Fixed

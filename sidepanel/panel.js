@@ -1965,6 +1965,13 @@
     chrome.tabs.onActivated.addListener(() => safeExtractFromActiveTab());
   }
 
+  // Версия читается из manifest.json динамически, а не хардкодится здесь —
+  // единственный источник истины, чтобы UI не мог разойтись с реальной версией.
+  const versionEl = $('app-version');
+  if (versionEl && chrome.runtime && chrome.runtime.getManifest) {
+    versionEl.textContent = 'v' + chrome.runtime.getManifest().version;
+  }
+
   // ---------- init ----------
 
   initTabs();
