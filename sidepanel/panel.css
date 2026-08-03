@@ -295,14 +295,14 @@ select:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px 
 .cta:disabled { opacity: 0.5; cursor: default; box-shadow: none; transform: none; }
 
 .cta.ghost {
-  background: transparent;
-  color: var(--amber);
+  background: var(--amber-pale);
+  color: var(--amber-ink);
   border: none;
   border-radius: 999px;
   font-weight: 600;
   box-shadow: none;
 }
-.cta.ghost:hover { background: rgba(255, 149, 0, 0.08); }
+.cta.ghost:hover { background: #FCE9CC; }
 .cta.ghost:active { transform: scale(0.97); }
 
 /* ---------- чипы ---------- */
