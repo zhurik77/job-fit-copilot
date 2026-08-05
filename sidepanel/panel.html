@@ -158,12 +158,25 @@
         </div>
 
         <button class="cta" id="btn-ats-check">Запустить ATS-разбор</button>
+        <button class="cta ghost" id="btn-ats-compare-all" hidden>Сравнить все резюме под эту вакансию</button>
         <div class="error" id="ats-error"></div>
       </section>
 
       <div class="loading" id="ats-loading">
         <span id="ats-loading-label">Сравниваю резюме с вакансией</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
       </div>
+
+      <!-- Сравнение версий резюме под одну вакансию: какая из сохранённых
+           версий позиционирования реально закрывает больше требований. -->
+      <section class="card animate-in" id="ats-compare-result" hidden>
+        <div class="card-head">
+          <span class="label">Какое резюме отправлять</span>
+          <span class="mono muted" id="ats-compare-count"></span>
+        </div>
+        <div class="meta" id="ats-compare-vacancy"></div>
+        <div id="ats-compare-list"></div>
+        <div class="meta" id="ats-compare-note" style="margin-top:10px; margin-bottom:0;"></div>
+      </section>
 
       <section class="card animate-in" id="ats-result" hidden>
         <div class="card-head">
@@ -232,58 +245,96 @@
     </div>
 
     <div class="tab-panel" data-tab="profile" hidden>
-      <section class="card">
-        <div class="card-head"><span class="label">Мой профиль</span></div>
+      <section class="card card-primary">
+        <div class="card-head">
+          <span class="label">Резюме</span>
+          <span class="chip chip-mini chip-source" id="rs-source-badge" hidden></span>
+        </div>
 
         <select id="profile-select"></select>
         <button class="cta ghost" id="btn-import-resume" hidden>Импортировать резюме с этой страницы</button>
         <div class="meta" id="profile-import-status"></div>
 
-        <div id="profile-structured" hidden>
-          <div class="rs-head">
+        <!-- Шапка: должность и зарплатные ожидания как заголовок, а не как
+             ещё одна строка в общем потоке текста. -->
+        <div class="rs-hero" id="rs-hero" hidden>
+          <div class="rs-hero-main">
             <div class="rs-title" id="rs-title"></div>
-            <div class="rs-salary" id="rs-salary"></div>
+            <div class="rs-updated" id="rs-updated"></div>
           </div>
-          <div class="block-title" id="rs-experience-title">Опыт работы</div>
-          <div id="rs-experience"></div>
-          <div class="block-title" id="rs-skills-title">Навыки</div>
-          <div class="rs-skills" id="rs-skills"></div>
-          <div class="block-title" id="rs-education-title">Образование</div>
-          <div id="rs-education"></div>
-          <div class="block-title" id="rs-about-title">О себе</div>
-          <p class="reasoning" id="rs-about"></p>
+          <div class="rs-salary" id="rs-salary"></div>
         </div>
 
-        <div class="block-title">Текст профиля (отправляется модели)</div>
-        <textarea id="profile-text" rows="6" placeholder="Опиши свой опыт и целевые роли..."></textarea>
-        <button class="cta ghost" id="btn-save-profile">Сохранить профиль</button>
+        <!-- Сводка одной строкой: что внутри резюме и как оно оценено.
+             Раньше ATS-оценка жила только внутри последнего разбора и
+             терялась при перезагрузке панели. -->
+        <div class="rs-stats" id="rs-stats" hidden>
+          <div class="rs-stat">
+            <div class="rs-stat-num" id="rs-stat-exp">—</div>
+            <div class="rs-stat-label">мест работы</div>
+          </div>
+          <div class="rs-stat">
+            <div class="rs-stat-num" id="rs-stat-skills">—</div>
+            <div class="rs-stat-label">навыков</div>
+          </div>
+          <div class="rs-stat rs-stat-score" id="rs-stat-score-wrap">
+            <div class="rs-stat-num" id="rs-stat-score">—</div>
+            <div class="rs-stat-label" id="rs-stat-score-label">ATS-оценка</div>
+          </div>
+        </div>
 
-        <button class="cta ghost" id="btn-review-resume">Оценить резюме</button>
+        <button class="cta" id="btn-review-resume">Оценить резюме</button>
         <div class="loading" id="resume-review-loading">
           <span id="resume-review-loading-label">Оцениваю</span> <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
-        <div id="resume-review-result" hidden class="animate-in">
-          <div class="block-title">Результаты глубокого ATS-аудита</div>
-          
-          <div class="ring-score" id="ring-ats-audit" data-score="0" style="margin-bottom:12px;">
-            <svg viewBox="0 0 120 120" width="120" height="120">
-              <circle cx="60" cy="60" r="52" class="ring-score__track" />
-              <circle class="ring-score__fill" id="rr-score-arc" cx="60" cy="60" r="52" />
-              <defs>
-                <linearGradient id="ringGradientAudit" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#34C759" />
-                  <stop offset="100%" stop-color="#30B0C7" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="ring-score__label">
-              <span class="ring-score__value" id="rr-score">0%</span>
-            </div>
-          </div>
+      </section>
 
-          <div style="text-align:center; margin-bottom:14px;">
-            <div style="font-weight:700; font-size:15px; color:var(--ink);">Общий ATS Score</div>
-            <div class="meta" id="rr-progress-delta">Сравнение с прошлым аудитом появится при повторном запуске</div>
+      <!-- Содержимое резюме отдельной карточкой: раньше опыт, навыки и
+           образование шли сплошным потоком внутри той же карточки, что и
+           элементы управления, и читались как один длинный список. -->
+      <section class="card" id="profile-structured" hidden>
+        <div class="card-head"><span class="label">Содержимое резюме</span></div>
+
+        <div class="block-title" id="rs-experience-title">Опыт работы</div>
+        <div id="rs-experience"></div>
+        <div class="block-title" id="rs-skills-title">Навыки</div>
+        <div class="rs-skills" id="rs-skills"></div>
+        <div class="block-title" id="rs-education-title">Образование</div>
+        <div id="rs-education"></div>
+        <div class="block-title" id="rs-about-title">О себе</div>
+        <p class="reasoning" id="rs-about"></p>
+      </section>
+
+      <!-- Сырой текст — то, что реально уходит модели. Нужен для правки и
+           отладки, но это не главный экран, поэтому свёрнут. -->
+      <section class="card">
+        <details class="disclosure" id="profile-text-disclosure">
+          <summary>
+            <span class="label">Текст, который уходит модели</span>
+            <span class="disclosure-hint" id="profile-text-len"></span>
+          </summary>
+          <div class="disclosure-body">
+            <textarea id="profile-text" rows="10" placeholder="Опиши свой опыт и целевые роли..."></textarea>
+            <button class="cta ghost" id="btn-save-profile">Сохранить изменения</button>
+          </div>
+        </details>
+      </section>
+
+      <section class="card animate-in" id="resume-review-result" hidden>
+          <div class="card-head"><span class="label">Глубокий ATS-аудит</span></div>
+
+          <div class="rr-verdict">
+            <div class="gauge gauge-lg">
+              <svg viewBox="0 0 120 120" width="110" height="110" aria-hidden="true">
+                <circle cx="60" cy="60" r="52" class="gauge-track" />
+                <circle class="gauge-fill" id="rr-score-arc" cx="60" cy="60" r="52" />
+              </svg>
+              <span class="gauge-num" id="rr-score">0</span>
+            </div>
+            <div class="rr-verdict-text">
+              <div class="rr-verdict-title" id="rr-verdict-title">Общая ATS-оценка</div>
+              <div class="meta" id="rr-progress-delta">Сравнение с прошлым аудитом появится при повторном запуске</div>
+            </div>
           </div>
 
           <div class="ledger-card">
@@ -330,7 +381,6 @@
             <button class="cta" id="btn-export-ats-report" type="button">Открыть полный отчёт (в новой вкладке)</button>
             <button class="cta ghost" id="btn-download-ats-report" type="button">Скачать отчёт (.html)</button>
           </div>
-        </div>
       </section>
     </div>
 

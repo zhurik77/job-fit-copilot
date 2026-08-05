@@ -5,4 +5,6 @@ Thumbs.db
 *.pem
 __pycache__/
 node_modules/
-package-lock.json
+
+# package-lock.json намеренно НЕ игнорируется: без него `npm ci` в CI
+# невозможен, а сборка перестаёт быть воспроизводимой.

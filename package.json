@@ -1,0 +1,24 @@
+{
+  "name": "jobfitcopilot",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Job Fit Copilot — Chrome MV3 extension for job-fit analysis, deep ATS resume audit and cover letters.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhurik77/jobfitcopilot.git"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "check": "npm run lint && npm test",
+    "shots": "node tools/shot.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "playwright": "^1.49.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

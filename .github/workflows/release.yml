@@ -12,9 +12,47 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Релиз не выпускается, если проверки не проходят: раньше тег
+      # публиковался безусловно, и сломанная сборка уехала бы пользователям.
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # Тег обязан совпадать с версией в манифесте, иначе установленное
+      # расширение и страница релиза сообщают разные версии.
+      - name: Тег совпадает с manifest.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MANIFEST=$(node -p "require('./manifest.json').version")
+          if [ "$TAG" != "$MANIFEST" ]; then
+            echo "::error::Тег $GITHUB_REF_NAME не совпадает с manifest.json ($MANIFEST)"
+            exit 1
+          fi
+
+      # Собираем zip, готовый и к unpacked-установке, и к загрузке в
+      # Chrome Web Store — без node_modules, тестов и служебных файлов.
+      - name: Собрать zip расширения
+        run: |
+          mkdir -p dist
+          zip -r "dist/jobfitcopilot-${GITHUB_REF_NAME}.zip" . \
+            -x '*.git*' 'node_modules/*' 'dist/*' 'test/*' 'tools/*' \
+               'package*.json' 'eslint.config.js' 'docs/*'
+          ls -lh dist/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
