@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Fit Copilot — ИИ, который отговаривает вас откликаться</title>
+<meta name="description" content="Расширение для Chrome: разбирает вакансию по фактам из вашего резюме и честно говорит, стоит ли тратить вечер на отклик. Без бэкенда, на вашем API-ключе.">
+<meta property="og:title" content="Job Fit Copilot — ИИ, который отговаривает вас откликаться">
+<meta property="og:description" content="Разбирает вакансию по фактам из вашего резюме и честно говорит: откликаться или пропустить. Данные не покидают браузер.">
+<meta property="og:type" content="website">
+<style>
+  :root {
+    --paper:      #F2F3F0;
+    --paper-deep: #E8EAE4;
+    --ink:        #15191A;
+    --ink-soft:   #5A625F;
+    --rule:       #D3D7CE;
+    --debit:      #C4342B;
+    --credit:     #1F6B45;
+    --accent:     #FF9500;
+    --accent-ink: #7A4200;
+
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", "Droid Serif", serif;
+    --mono: "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, "DejaVu Sans Mono", monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    --measure: 34rem;
+    --gutter: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #0F1312;
+      --paper-deep: #161B1A;
+      --ink:        #E8EAE4;
+      --ink-soft:   #949C98;
+      --rule:       #2A3230;
+      --debit:      #E8756A;
+      --credit:     #52C08C;
+      --accent:     #FF9F0A;
+      --accent-ink: #FFD79A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #0F1312;
+    --paper-deep: #161B1A;
+    --ink:        #E8EAE4;
+    --ink-soft:   #949C98;
+    --rule:       #2A3230;
+    --debit:      #E8756A;
+    --credit:     #52C08C;
+    --accent:     #FF9F0A;
+    --accent-ink: #FFD79A;
+  }
+  :root[data-theme="light"] {
+    --paper:      #F2F3F0;
+    --paper-deep: #E8EAE4;
+    --ink:        #15191A;
+    --ink-soft:   #5A625F;
+    --rule:       #D3D7CE;
+    --debit:      #C4342B;
+    --credit:     #1F6B45;
+    --accent:     #FF9500;
+    --accent-ink: #7A4200;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell { max-width: 62rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Общая типографика ---------- */
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 700; letter-spacing: -0.015em; }
+  h1 { font-size: clamp(2.1rem, 1.4rem + 3.4vw, 3.9rem); line-height: 1.06; }
+  h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); line-height: 1.15; }
+  h3 { font-size: 1.0625rem; }
+  p { margin: 0; max-width: var(--measure); }
+
+  .eyebrow {
+    font-family: var(--ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-soft);
+  }
+
+  .lede { font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem); color: var(--ink-soft); }
+
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  section { border-top: 1px solid var(--rule); padding: clamp(3rem, 7vw, 5.5rem) 0; }
+
+  .stack { display: flex; flex-direction: column; gap: 1.25rem; }
+  .stack-tight { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  /* ---------- Шапка ---------- */
+
+  .masthead {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: 1.5rem 0; font-family: var(--ui); font-size: 0.8125rem;
+  }
+  .wordmark { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; letter-spacing: 0.01em; }
+  .wordmark::before {
+    content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%;
+    background: var(--accent); flex: none;
+  }
+  .masthead nav { display: flex; gap: 1.25rem; align-items: center; }
+  .masthead a { text-decoration: none; color: var(--ink-soft); }
+  .masthead a:hover { color: var(--ink); }
+  .theme-toggle {
+    font: inherit; background: none; border: 1px solid var(--rule);
+    color: var(--ink-soft); border-radius: 999px; padding: 0.25rem 0.7rem; cursor: pointer;
+  }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
+
+  /* ---------- Герой ---------- */
+
+  .hero { border-top: none; padding-top: clamp(2rem, 5vw, 3.5rem); }
+  .hero-grid { display: grid; grid-template-columns: 1fr; gap: clamp(2.5rem, 5vw, 4rem); align-items: start; }
+  @media (min-width: 60rem) { .hero-grid { grid-template-columns: 1fr 1fr; } }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--debit);
+  }
+
+  .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; font-family: var(--ui); }
+  .btn {
+    display: inline-block; text-decoration: none; font-size: 0.9375rem; font-weight: 600;
+    padding: 0.7rem 1.4rem; border-radius: 999px; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: #241300; }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .btn-quiet { border-color: var(--rule); color: var(--ink); }
+  .btn-quiet:hover { border-color: var(--ink-soft); }
+  .cta-note { font-size: 0.8125rem; color: var(--ink-soft); }
+
+  /* ---------- Ведомость ---------- */
+
+  .ledger {
+    background: var(--paper-deep);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: clamp(1.1rem, 2.5vw, 1.6rem);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    overflow-x: auto;
+  }
+  .ledger-head {
+    display: flex; justify-content: space-between; gap: 1rem;
+    padding-bottom: 0.7rem; margin-bottom: 0.3rem;
+    border-bottom: 1.5px solid var(--ink);
+    font-family: var(--ui); font-size: 0.6875rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+  }
+  .ledger-vacancy {
+    font-family: var(--serif); font-size: 0.9375rem; font-style: italic;
+    color: var(--ink-soft); padding: 0.7rem 0; margin: 0;
+  }
+  .ledger-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 1rem; align-items: baseline;
+    padding: 0.5rem 0; border-bottom: 1px solid var(--rule);
+    line-height: 1.45;
+  }
+  .ledger-row .fact { color: var(--ink); }
+  .ledger-row .delta { font-weight: 700; white-space: nowrap; }
+  .delta.pos { color: var(--credit); }
+  .delta.neg { color: var(--debit); }
+  .ledger-row.base { border-top: none; color: var(--ink-soft); }
+  .ledger-row.base .delta { color: var(--ink-soft); font-weight: 400; }
+
+  .ledger-total {
+    display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: baseline;
+    padding-top: 0.85rem; margin-top: 0.25rem;
+    border-top: 1.5px solid var(--ink);
+  }
+  .ledger-total .label {
+    font-family: var(--ui); font-size: 0.6875rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+  }
+  .ledger-total .score { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+  .verdict {
+    margin-top: 0.9rem; padding: 0.55rem 0.85rem; border-radius: 3px;
+    font-family: var(--ui); font-size: 0.8125rem; font-weight: 700;
+    letter-spacing: 0.06em; text-align: center;
+    background: color-mix(in srgb, var(--debit) 14%, transparent);
+    color: var(--debit);
+    border: 1px solid color-mix(in srgb, var(--debit) 35%, transparent);
+  }
+  .verdict-note {
+    margin-top: 0.7rem; font-family: var(--serif); font-size: 0.875rem;
+    color: var(--ink-soft); line-height: 1.5;
+  }
+
+  /* ---------- Сетки ---------- */
+
+  .cols { display: grid; gap: clamp(1.75rem, 4vw, 3rem); grid-template-columns: 1fr; }
+  @media (min-width: 46rem) { .cols-2 { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 52rem) { .cols-3 { grid-template-columns: repeat(3, 1fr); } }
+
+  .mode { display: flex; flex-direction: column; gap: 0.55rem; padding-top: 1rem; border-top: 2px solid var(--ink); }
+  .mode p { font-size: 0.9375rem; color: var(--ink-soft); }
+
+  .rail { display: flex; flex-direction: column; gap: 1.6rem; }
+  .rail-item { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; align-items: baseline; }
+  .rail-item .mark {
+    font-family: var(--mono); font-size: 0.8125rem; font-weight: 700;
+    font-variant-numeric: tabular-nums; color: var(--ink-soft);
+    padding-top: 0.15rem;
+  }
+  .rail-item p { font-size: 0.9375rem; }
+  .rail-item h3 { margin-bottom: 0.2rem; }
+
+  /* ---------- Таблица моделей ---------- */
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem 0.7rem 0; border-bottom: 1px solid var(--rule); }
+  th {
+    font-family: var(--ui); font-size: 0.6875rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+    border-bottom-color: var(--ink);
+  }
+  td.mono { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-soft); }
+  .free { color: var(--credit); font-weight: 700; }
+
+  /* ---------- Приватность ---------- */
+
+  .proof {
+    font-family: var(--mono); font-size: 0.8125rem; line-height: 1.7;
+    background: var(--paper-deep); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px; padding: 1rem 1.1rem; overflow-x: auto;
+  }
+  .proof .c { color: var(--ink-soft); }
+
+  /* ---------- Установка ---------- */
+
+  .steps { counter-reset: step; display: flex; flex-direction: column; gap: 1.4rem; }
+  .step { display: grid; grid-template-columns: 2rem 1fr; gap: 1rem; align-items: baseline; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    font-family: var(--mono); font-weight: 700; color: var(--accent-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .step code {
+    font-family: var(--mono); font-size: 0.8125rem;
+    background: var(--paper-deep); padding: 0.1rem 0.35rem; border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+
+  /* ---------- Подвал ---------- */
+
+  footer {
+    border-top: 1px solid var(--rule); padding: 2.5rem 0 4rem;
+    font-family: var(--ui); font-size: 0.8125rem; color: var(--ink-soft);
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; justify-content: space-between;
+  }
+  footer a { color: var(--ink-soft); }
+  footer nav { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+
+  /* ---------- Движение ----------
+     На странице ровно один анимированный момент — подсчёт ведомости в герое.
+     Никакого scroll-reveal: контент не должен зависеть от JS, чтобы быть
+     видимым, а россыпь мелких эффектов только удешевляет страницу. */
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="masthead">
+    <span class="wordmark">Job Fit Copilot</span>
+    <nav>
+      <a href="#how">Как это работает</a>
+      <a href="#privacy">Приватность</a>
+      <a href="https://github.com/zhurik77/jobfitcopilot">GitHub</a>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Переключить тему">Тема</button>
+    </nav>
+  </header>
+</div>
+
+<main>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="stack">
+          <p class="eyebrow">Расширение для Chrome · Manifest V3</p>
+          <h1>ИИ, который <em>отговаривает</em> вас откликаться</h1>
+          <p class="lede">
+            Все остальные инструменты помогают разослать больше откликов.
+            Этот считает, сколько вечеров вы потратите зря, — и чаще всего
+            советует закрыть вкладку.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/zhurik77/jobfitcopilot/releases/latest">Скачать релиз</a>
+            <a class="btn btn-quiet" href="https://github.com/zhurik77/jobfitcopilot">Исходники</a>
+          </div>
+          <p class="cta-note">
+            Бесплатно и без регистрации. Работает на бесплатном ключе NVIDIA NIM —
+            свой ключ, свои данные, без нашего сервера посередине.
+          </p>
+        </div>
+
+        <div class="ledger" id="ledger">
+          <div class="ledger-head">
+            <span>Разбор совпадения</span>
+            <span>Дельта</span>
+          </div>
+          <p class="ledger-vacancy">Бизнес-аналитик (Enterprise), hh.ru</p>
+
+          <div class="ledger-row base">
+            <span class="fact">Базовый уровень совпадения</span>
+            <span class="delta">50</span>
+          </div>
+          <div class="ledger-row">
+            <span class="fact">Python, REST API, SQL — совпадает со стеком вакансии</span>
+            <span class="delta pos" data-delta="14">+14</span>
+          </div>
+          <div class="ledger-row">
+            <span class="fact">Сбор требований и проектирование CRM-логики в UniversityID</span>
+            <span class="delta pos" data-delta="11">+11</span>
+          </div>
+          <div class="ledger-row">
+            <span class="fact">Требуется 3+ года в энтерпрайз-BA — в резюме автоматизация, не BA-трек</span>
+            <span class="delta neg" data-delta="-22">−22</span>
+          </div>
+          <div class="ledger-row">
+            <span class="fact">Обязателен SAP FI/CO — в резюме не встречается ни разу</span>
+            <span class="delta neg" data-delta="-18">−18</span>
+          </div>
+          <div class="ledger-row">
+            <span class="fact">Формат: офис, Москва. В резюме — удалённый формат</span>
+            <span class="delta neg" data-delta="-9">−9</span>
+          </div>
+
+          <div class="ledger-total">
+            <span class="label">Индекс совместимости</span>
+            <span class="score delta neg" id="ledger-score">26</span>
+          </div>
+          <p class="verdict">ПРОПУСТИТЬ</p>
+          <p class="verdict-note">
+            Два обязательных требования не покрыты, и это не вопрос формулировок —
+            такого опыта в резюме нет. Вдумчивый отклик занял бы ~25 минут.
+            Потратьте их на другую вакансию.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="cols cols-2">
+        <div class="stack">
+          <p class="eyebrow">Зачем</p>
+          <h2>Отклик стоит не клика, а вечера</h2>
+        </div>
+        <div class="stack">
+          <p>
+            Откликнуться в один клик — бесплатно, и поэтому бесполезно: такие
+            отклики отсеиваются первыми. Отклик, у которого есть шанс, — это
+            перечитать вакансию, сопоставить её со своим опытом, переписать
+            резюме под ключевые слова и написать нешаблонное письмо.
+          </p>
+          <p>
+            Двадцать пять минут. На тридцати вакансиях — двенадцать часов,
+            и половина из них уходит на позиции, где вас отсеет фильтр по
+            формальному требованию, которого у вас просто нет.
+          </p>
+          <p>
+            Job Fit Copilot тратит двадцать секунд, чтобы сказать, какие из
+            тридцати не стоят вашего вечера, — и почему именно, со ссылкой
+            на конкретную строчку вакансии и конкретный факт из резюме.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="stack" style="margin-bottom: 2.5rem;">
+        <p class="eyebrow">Четыре режима</p>
+        <h2>Что он делает, пока вы читаете вакансию</h2>
+      </div>
+      <div class="cols cols-2">
+        <div class="mode">
+          <h3>Разбор по факторам</h3>
+          <p>
+            База 50 и дельты за каждый фактор совпадения — как в ведомости выше.
+            Каждая строка обязана ссылаться на конкретный факт: годы, инструмент,
+            домен, цифру. Общие слова вроде «хороший кандидат» промпт запрещает.
+          </p>
+        </div>
+        <div class="mode">
+          <h3>ATS-разбор под резюме</h3>
+          <p>
+            Делит требования на обязательные и желательные, проверяет смысловое
+            покрытие: «Claude, промпт-инжиниринг» в резюме закрывает «опыт с LLM»
+            в вакансии, даже если слова «LLM» там нет.
+          </p>
+        </div>
+        <div class="mode">
+          <h3>Глубокий ATS-аудит резюме</h3>
+          <p>
+            Взвешенный скоринг по четырём критериям, построчный разбор опыта с
+            заменой «участвовал» на «спроектировал» и измеримый результат,
+            топ-20 подходящих ролей и карта ключевых слов.
+          </p>
+        </div>
+        <div class="mode">
+          <h3>Сопроводительные письма</h3>
+          <p>
+            Собираются из сильных сторон, которые нашёл разбор. Список
+            запрещённых клише зашит в промпт: «заинтересован в вашей вакансии»
+            и «высококвалифицированный специалист» не появятся.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="honesty">
+      <div class="cols cols-2">
+        <div class="stack">
+          <p class="eyebrow">Принцип</p>
+          <h2>Он не дорисовывает вам опыт</h2>
+          <p class="lede">
+            Инструмент, который приукрашивает резюме, готовит вас к провалу
+            на первом же техническом собеседовании.
+          </p>
+        </div>
+        <div class="rail">
+          <div class="rail-item">
+            <span class="mark">1 / 3</span>
+            <div>
+              <h3>Каждая правка проходит проверку на честность</h3>
+              <p>
+                У любой предложенной формулировки есть поле <code>honesty_check</code>:
+                модель обязана подтвердить, что правка опирается только на факты
+                из вашего резюме. Не может подтвердить — правка не предлагается вообще.
+              </p>
+            </div>
+          </div>
+          <div class="rail-item">
+            <span class="mark">2 / 3</span>
+            <div>
+              <h3>Разрыв называется разрывом</h3>
+              <p>
+                Если требования нет не на словах, а по сути, разбор говорит об
+                этом прямо, вместо того чтобы предложить «переформулировать».
+              </p>
+            </div>
+          </div>
+          <div class="rail-item">
+            <span class="mark">3 / 3</span>
+            <div>
+              <h3>Модель настроена быть придирчивой</h3>
+              <p>
+                Дословно из системного промпта: «задача не подбодрить кандидата,
+                а сэкономить его время, отсеяв нерелевантные вакансии».
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="cols cols-2">
+        <div class="stack">
+          <p class="eyebrow">Приватность</p>
+          <h2>Резюме не уходит на наш сервер, потому что сервера нет</h2>
+          <p>
+            У проекта нет ни бэкенда, ни базы, ни аккаунтов, ни аналитики.
+            Ключи и резюме лежат в <code>chrome.storage.local</code> вашего
+            браузера. Запрос идёт напрямую от вас к провайдеру, чей ключ вы
+            вставили.
+          </p>
+          <p>
+            Это проверяется за минуту, а не принимается на веру: во всём
+            расширении ровно один сетевой вызов.
+          </p>
+        </div>
+        <div class="stack">
+          <div class="proof">
+            <span class="c">$ grep -rn "fetch(" --include=*.js .</span><br>
+            background.js:104: await fetch(provider.endpoint, …)<br><br>
+            <span class="c"># единственный. больше расширение никуда не ходит.</span>
+          </div>
+          <p style="font-size: 0.9375rem;">
+            Расширение читает только ту страницу, которая уже открыта у вас во
+            вкладке. Оно не листает вакансии в фоне, не обходит авторизацию и
+            не отправляет отклики за вас — это осознанное ограничение, а не
+            недоделка.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="models">
+      <div class="stack" style="margin-bottom: 2rem;">
+        <p class="eyebrow">Модели</p>
+        <h2>Свой ключ, любой из четырёх</h2>
+        <p>Начать можно бесплатно: у NVIDIA NIM есть бесплатный тариф, которого хватает на ежедневный поиск.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Модель</th><th>Провайдер</th><th>Ключ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>DeepSeek V4 Flash</td><td class="mono">NVIDIA NIM</td><td class="free">бесплатный тариф</td></tr>
+            <tr><td>GLM-5.2</td><td class="mono">NVIDIA NIM</td><td class="free">бесплатный тариф</td></tr>
+            <tr><td>GPT-4.1</td><td class="mono">OpenAI</td><td>по тарифам OpenAI</td></tr>
+            <tr><td>Claude Sonnet 4.6</td><td class="mono">Anthropic</td><td>по тарифам Anthropic</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="cols cols-2">
+        <div class="stack">
+          <p class="eyebrow">Установка</p>
+          <h2>Три минуты, без регистрации</h2>
+          <p class="cta-note">
+            Пока расширение ставится вручную как распакованное — так вы видите
+            ровно тот код, который запускаете.
+          </p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="stack-tight">
+              <h3>Скачайте и распакуйте релиз</h3>
+              <p style="font-size: 0.9375rem;">Или клонируйте репозиторий, если привычнее.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="stack-tight">
+              <h3>Откройте <code>chrome://extensions</code></h3>
+              <p style="font-size: 0.9375rem;">Включите «Режим разработчика», затем «Загрузить распакованное расширение».</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="stack-tight">
+              <h3>Вставьте API-ключ в настройках</h3>
+              <p style="font-size: 0.9375rem;">Бесплатный ключ NVIDIA NIM берётся на build.nvidia.com за пару минут.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="stack-tight">
+              <h3>Откройте вакансию и запустите разбор</h3>
+              <p style="font-size: 0.9375rem;">hh.ru, LinkedIn или Upwork — панель подхватит текст со страницы сама.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="shell">
+  <footer>
+    <span>MIT · собирается и работает целиком в вашем браузере</span>
+    <nav>
+      <a href="https://github.com/zhurik77/jobfitcopilot">GitHub</a>
+      <a href="https://github.com/zhurik77/jobfitcopilot/blob/master/PRIVACY.md">Приватность</a>
+      <a href="https://github.com/zhurik77/jobfitcopilot/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://www.tbank.ru/cf/1cYvs7KjikV">Поддержать</a>
+    </nav>
+  </footer>
+</div>
+
+<script>
+  // Тема: выбор пользователя перекрывает системную настройку в обе стороны.
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    var saved = null;
+    try { saved = localStorage.getItem('jfc-theme'); } catch (e) { /* приватный режим */ }
+    if (saved) root.setAttribute('data-theme', saved);
+
+    btn.addEventListener('click', function () {
+      var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var current = root.getAttribute('data-theme') || (systemDark ? 'dark' : 'light');
+      var next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('jfc-theme', next); } catch (e) { /* приватный режим */ }
+    });
+  })();
+
+  // Ведомость подводит итог: дельты складываются по очереди, баланс идёт от 50
+  // к финальным 26. Один осмысленный момент вместо россыпи эффектов.
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var scoreEl = document.getElementById('ledger-score');
+    var ledger = document.getElementById('ledger');
+    if (!scoreEl || !ledger || reduce) return;
+
+    var deltas = Array.prototype.map.call(
+      ledger.querySelectorAll('[data-delta]'),
+      function (el) { return Number(el.getAttribute('data-delta')); }
+    );
+    var final = deltas.reduce(function (a, b) { return a + b; }, 50);
+
+    var played = false;
+    function tally() {
+      if (played) return;
+      played = true;
+      var running = 50;
+      scoreEl.textContent = running;
+      deltas.forEach(function (d, i) {
+        setTimeout(function () {
+          var from = running;
+          running += d;
+          var to = running;
+          var start = performance.now();
+          (function step(now) {
+            var t = Math.min((now - start) / 320, 1);
+            var eased = 1 - Math.pow(1 - t, 3);
+            scoreEl.textContent = Math.round(from + (to - from) * eased);
+            if (t < 1) requestAnimationFrame(step);
+            else if (i === deltas.length - 1) scoreEl.textContent = final;
+          })(start);
+        }, 420 + i * 260);
+      });
+    }
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { tally(); obs.disconnect(); }
+        });
+      }, { threshold: 0.35 }).observe(ledger);
+    } else {
+      tally();
+    }
+  })();
+
+</script>
+
+</body>
+</html>

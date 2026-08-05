@@ -1,6 +1,6 @@
 // Job Fit Copilot — логика side panel (редизайн 2026-07-27: ledger-разбор, вердикты-решения).
 (function () {
-  const { DEFAULT_PROFILE, MODELS, DEFAULT_MODEL, genId, ensureSavedResumes, ensureProfiles } = globalThis.JFC;
+  const { DEFAULT_PROFILE, MODELS, DEFAULT_MODEL, genId, ensureSavedResumes } = globalThis.JFC;
   const $ = id => document.getElementById(id);
 
   async function getActiveModelKey() {
@@ -23,6 +23,12 @@
   const resultEl = $('result');
   const historyEl = $('history');
 
+  // Версия — только из manifest.json, единственный источник правды: так UI
+  // и подпись в выгруженном отчёте не могут разойтись с реальным релизом.
+  const APP_VERSION = (chrome.runtime && chrome.runtime.getManifest)
+    ? 'v' + chrome.runtime.getManifest().version
+    : '';
+
   const VERDICTS = ['ОТКЛИКАТЬСЯ', 'С ОГОВОРКАМИ', 'ПРОПУСТИТЬ'];
   const HISTORY_LIMIT = 50;
   const BASE_SCORE = 50;
@@ -37,142 +43,14 @@
     return new Promise(r => setTimeout(r, ms));
   }
 
-  // ---------- SVG/CSS Visual Components (v0.4.0) ----------
-
-  function getRingColors(score) {
-    if (score < 50) return ['#FF3B30', '#FF9500'];
-    if (score < 75) return ['#FF9500', '#FFCC00'];
-    return ['#34C759', '#30B0C7'];
-  }
-
-  function setRingScore(el, score) {
-    if (!el) return;
-    const circle = el.querySelector('.ring-score__fill');
-    const grad = el.querySelector('linearGradient');
-    const valEl = el.querySelector('.ring-score__value');
-    const r = circle ? (Number(circle.getAttribute('r')) || 52) : 52;
-    const circumference = 2 * Math.PI * r;
-    const offset = circumference * (1 - Math.max(0, Math.min(100, score)) / 100);
-
-    if (circle) {
-      circle.style.strokeDasharray = circumference;
-      circle.style.strokeDashoffset = offset;
-    }
-    if (grad) {
-      const [c1, c2] = getRingColors(score);
-      const stops = grad.querySelectorAll('stop');
-      if (stops.length >= 2) {
-        stops[0].setAttribute('stop-color', c1);
-        stops[1].setAttribute('stop-color', c2);
-      }
-    }
-    if (valEl) valEl.textContent = `${Math.round(score)}%`;
-  }
-
-  function ledgerColorClass(value) {
-    const val = Number(value) || 0;
-    if (val >= 80) return 'ledger__value--positive';
-    if (val >= 60) return 'ledger__value--warning';
-    return 'ledger__value--negative';
-  }
-
-  function renderLedgerBreakdown(container, sb) {
-    if (!container) return;
-    container.innerHTML = '';
-    const items = [
-      { label: 'Совпадение ключевых слов', val: Math.round(sb.keyword_match_score || 0) },
-      { label: 'Структура резюме', val: Math.round(sb.structure_score || 0) },
-      { label: 'Релевантность опыта', val: Math.round(sb.experience_relevance_score || 0) },
-      { label: 'Плотность метрик', val: Math.round(sb.metrics_density_score || 0) }
-    ];
-    items.forEach(it => {
-      const row = document.createElement('div');
-      row.className = 'ledger__row';
-      row.innerHTML = `
-        <span class="ledger__label">${it.label}</span>
-        <span class="ledger__value ${ledgerColorClass(it.val)}">${it.val}%</span>
-      `;
-      container.appendChild(row);
-    });
-  }
-
-  function renderActionableEditsList(container, edits) {
-    if (!container) return;
-    container.innerHTML = '';
-    const list = Array.isArray(edits) ? edits : [];
-    if (!list.length) {
-      container.innerHTML = '<div class="meta">Все критичные требования покрыты, дополнительных правок не требуется.</div>';
-      return;
-    }
-    list.forEach(edit => {
-      const card = document.createElement('div');
-      card.className = 'edit-card';
-      const textToCopy = edit.suggested_text || '';
-      card.innerHTML = `
-        <div class="edit-card__section">Раздел: ${edit.resume_section || 'Общий'}</div>
-        <div class="edit-card__gap">Пробел: ${edit.current_gap || ''}</div>
-        <div class="edit-card__suggestion"><span class="edit-card__arrow">→</span>${textToCopy}</div>
-        <button class="edit-card__copy" type="button">Скопировать формулировку</button>
-      `;
-      const copyBtn = card.querySelector('.edit-card__copy');
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(textToCopy);
-        const old = copyBtn.textContent;
-        copyBtn.textContent = 'Скопировано ✓';
-        setTimeout(() => { copyBtn.textContent = old; }, 1400);
-      });
-      container.appendChild(card);
-    });
-  }
-
-  function renderVerdictDonutChart(el, counts) {
-    if (!el) return;
-    const r = 52, circumference = 2 * Math.PI * r;
-    const segments = [
-      { value: counts.fit || 0, color: '#34C759' },
-      { value: counts.borderline || 0, color: '#FF9500' },
-      { value: counts.skip || 0, color: '#FF3B30' },
-    ];
-    let offsetAccum = 0;
-    const circles = el.querySelectorAll('.donut-segment');
-    segments.forEach((seg, i) => {
-      if (circles[i]) {
-        const len = circumference * (seg.value / 100);
-        circles[i].setAttribute('stroke', seg.color);
-        circles[i].style.strokeDasharray = `${len} ${circumference - len}`;
-        circles[i].style.strokeDashoffset = -offsetAccum;
-        offsetAccum += len;
-      }
-    });
-  }
-
-  function renderSparklineChart(el, values) {
-    if (!el || !values.length) return;
-    const w = 280, h = 60, max = Math.max(...values, 1);
-    const step = w / Math.max(values.length - 1, 1);
-    const points = values.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 5) - 3).toFixed(1)}`);
-    const linePath = `M${points.join(' L')}`;
-    const areaPath = `${linePath} L${w},${h} L0,${h} Z`;
-    const area = el.querySelector('.sparkline-area');
-    const line = el.querySelector('.sparkline-line');
-    if (area) area.setAttribute('d', areaPath);
-    if (line) line.setAttribute('d', linePath);
-  }
-
-  function renderSourcesList(container, sources) {
-    if (!container) return;
-    container.innerHTML = '';
-    sources.forEach(src => {
-      const row = document.createElement('div');
-      row.className = 'source-row';
-      row.innerHTML = `
-        <div class="source-row__icon source-row__icon--${src.key}">${src.key}</div>
-        <span class="source-row__name">${src.name}</span>
-        <div class="source-row__bar"><div class="source-row__bar-fill" style="width: ${src.pct}%"></div></div>
-        <span class="source-row__pct">${src.pct}%</span>
-      `;
-      container.appendChild(row);
-    });
+  // Любая строка, пришедшая от модели, прежде чем попасть в innerHTML.
+  // Текст вакансии мы не контролируем, модель переносит его в ответ дословно,
+  // а выгруженный .html-отчёт открывается уже без CSP расширения — так что
+  // экранируем везде, а не только там, где «наверное, безопасно».
+  const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  function esc(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[&<>"']/g, ch => HTML_ESCAPES[ch]);
   }
 
   // Отправка сообщения background.js с повтором при RATE_LIMIT (перегружен провайдер
@@ -247,17 +125,42 @@
     return Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
   }
 
+  // Длину окружности берём из самого элемента, а не из константы: до v0.4.5
+  // здесь было зашитое 188.5 (2π·30), тогда как в разметке r=52 (окружность
+  // 326.7) — из-за чего индекс 100 закрашивал кольцо на 58%, а индекс 0
+  // рисовал дугу на 42%. Число в центре при этом было верным, поэтому
+  // расхождение бросалось в глаза.
+  function arcCircumference(arcEl) {
+    // getTotalLength() точнее, но у скрытого (hidden) контейнера возвращает 0 —
+    // поэтому считаем из атрибута r, который есть всегда.
+    const r = Number(arcEl.getAttribute('r')) || 0;
+    return 2 * Math.PI * r;
+  }
+
   // Дуга-индекс: заполняет число в центре и SVG-дугу вокруг него по kind (good/mid/bad).
-  const GAUGE_CIRCUMFERENCE = 188.5; // 2 * π * 30 (r дуги в разметке)
+  function setArc(arcEl, percent, kind) {
+    if (!arcEl) return;
+    const circumference = arcCircumference(arcEl);
+    const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+    arcEl.style.strokeDasharray = String(circumference);
+    arcEl.style.strokeDashoffset = String(circumference * (1 - clamped / 100));
+    arcEl.setAttribute('class', 'gauge-fill ' + kind);
+  }
+
+  // Порог совпадения → цветовой класс. Один источник правды для всех дуг.
+  function scoreKind(score) {
+    if (score >= 75) return 'good';
+    if (score >= 50) return 'mid';
+    return 'bad';
+  }
+
   function setGauge(numId, arcId, score, kind) {
     const numEl = $(numId);
-    numEl.textContent = score;
-    numEl.className = 'gauge-num ' + kind;
-
-    const arcEl = $(arcId);
-    const clamped = Math.max(0, Math.min(100, score));
-    arcEl.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE * (1 - clamped / 100));
-    arcEl.setAttribute('class', 'gauge-fill ' + kind);
+    if (numEl) {
+      numEl.textContent = score;
+      numEl.className = 'gauge-num ' + kind;
+    }
+    setArc($(arcId), score, kind);
   }
 
   // Номер проверки в реестре: JFC-YYYYMMDD-NN (NN — порядковый номер за сессию истории).
@@ -271,46 +174,51 @@
 
   // ---------- профиль (именованные профили, несколько резюме) ----------
 
-  let profilesCache = [];
-  let activeProfileIdCache = null;
+  let resumesCache = [];
+  let activeResumeIdCache = null;
 
   function renderProfileSelect() {
     const select = $('profile-select');
     select.innerHTML = '';
-    profilesCache.forEach(p => {
+    resumesCache.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = p.name + (p.source === 'hh-import' ? ' (hh.ru)' : '');
       select.appendChild(opt);
     });
-    select.value = activeProfileIdCache;
+    select.value = activeResumeIdCache;
   }
 
   async function loadProfile() {
-    const { profiles, activeProfileId } = await ensureProfiles();
-    profilesCache = profiles;
-    activeProfileIdCache = activeProfileId;
+    const { savedResumes, activeResumeId } = await ensureSavedResumes();
+    resumesCache = savedResumes;
+    activeResumeIdCache = activeResumeId;
     renderProfileSelect();
-    const active = profilesCache.find(p => p.id === activeProfileIdCache);
+    const active = resumesCache.find(p => p.id === activeResumeIdCache);
     $('profile-text').value = (active && active.text) || DEFAULT_PROFILE;
     renderProfileStructuredView(active);
   }
 
   $('profile-select').addEventListener('change', async (e) => {
-    activeProfileIdCache = e.target.value;
-    await chrome.storage.local.set({ activeProfileId: activeProfileIdCache });
-    const active = profilesCache.find(p => p.id === activeProfileIdCache);
+    activeResumeIdCache = e.target.value;
+    await chrome.storage.local.set({ activeResumeId: activeResumeIdCache });
+    const active = resumesCache.find(p => p.id === activeResumeIdCache);
     $('profile-text').value = (active && active.text) || '';
     $('profile-import-status').textContent = '';
     renderProfileStructuredView(active);
   });
 
   $('btn-save-profile').addEventListener('click', async () => {
-    const active = profilesCache.find(p => p.id === activeProfileIdCache);
+    const active = resumesCache.find(p => p.id === activeResumeIdCache);
     if (active) {
       active.text = $('profile-text').value;
       active.updatedAt = Date.now();
-      await chrome.storage.local.set({ profiles: profilesCache });
+      await chrome.storage.local.set({ savedResumes: resumesCache });
+      updateProfileTextHint(active);
+      renderProfileSummary(active, active.structured || parseImportedText(active.text));
+      // Тот же список питает селектор резюме во вкладке ATS — обновляем,
+      // иначе там останется прежний текст до перезагрузки панели.
+      await populateAtsResumeSelect();
     }
     flashButton($('btn-save-profile'), 'Сохранено ✓');
   });
@@ -352,17 +260,88 @@
     return result;
   }
 
+  // Экстрактор hh.ru склеивает заголовок опыта как
+  // "Компания · Должность · период" — разбираем обратно, чтобы период
+  // и должность не читались одной сплошной жирной строкой.
+  function splitExperienceHeading(heading) {
+    const parts = String(heading || '').split('·').map(p => p.trim()).filter(Boolean);
+    if (parts.length <= 1) return { title: heading || '', meta: '' };
+    return { title: parts[0], meta: parts.slice(1).join(' · ') };
+  }
+
+  function formatRelativeDate(ts) {
+    if (!ts) return '';
+    const days = Math.floor((Date.now() - ts) / 86400000);
+    if (days <= 0) return 'обновлено сегодня';
+    if (days === 1) return 'обновлено вчера';
+    if (days < 30) return `обновлено ${days} дн. назад`;
+    return 'обновлено ' + new Date(ts).toLocaleDateString('ru-RU');
+  }
+
+  // Шапка и сводка резюме. Показывается всегда — даже когда структурных
+  // данных нет (резюме введено вручную), потому что ATS-оценка и дата
+  // правки актуальны в любом случае.
+  function renderProfileSummary(profile, structured) {
+    const hero = $('rs-hero');
+    const stats = $('rs-stats');
+    const badge = $('rs-source-badge');
+    if (!profile) {
+      hero.hidden = true;
+      stats.hidden = true;
+      badge.hidden = true;
+      return;
+    }
+
+    hero.hidden = false;
+    stats.hidden = false;
+
+    const s = structured || {};
+    $('rs-title').textContent = s.title || profile.name || 'Резюме';
+    $('rs-salary').textContent = s.salary || '';
+    $('rs-updated').textContent = formatRelativeDate(profile.updatedAt);
+
+    const fromHh = profile.source === 'hh-import';
+    badge.hidden = false;
+    badge.textContent = fromHh ? 'с hh.ru' : 'вручную';
+    badge.className = 'chip chip-mini ' + (fromHh ? 'chip-source' : 'chip-neutral');
+
+    const expCount = Array.isArray(s.experience) ? s.experience.length : 0;
+    const skillCount = Array.isArray(s.skills) ? s.skills.length : 0;
+    $('rs-stat-exp').textContent = expCount || '—';
+    $('rs-stat-skills').textContent = skillCount || '—';
+
+    // ATS-оценка хранится на самом резюме, поэтому переживает перезагрузку
+    // панели и переключение между резюме.
+    const scoreEl = $('rs-stat-score');
+    const labelEl = $('rs-stat-score-label');
+    const wrap = $('rs-stat-score-wrap');
+    if (typeof profile.atsScore === 'number') {
+      scoreEl.textContent = profile.atsScore;
+      scoreEl.className = 'rs-stat-num ' + scoreKind(profile.atsScore);
+      labelEl.textContent = 'ATS-оценка';
+      wrap.classList.add('is-clickable');
+      wrap.title = 'Оценка от ' + new Date(profile.atsScoreAt || Date.now()).toLocaleDateString('ru-RU');
+    } else {
+      scoreEl.textContent = '—';
+      scoreEl.className = 'rs-stat-num';
+      labelEl.textContent = 'не оценено';
+      wrap.classList.remove('is-clickable');
+      wrap.removeAttribute('title');
+    }
+  }
+
   function renderProfileStructuredView(profile) {
     const el = $('profile-structured');
     let s = profile && profile.structured;
     if (!s && profile && profile.source === 'hh-import') {
       s = parseImportedText(profile.text);
     }
+
+    renderProfileSummary(profile, s);
+    updateProfileTextHint(profile);
+
     if (!s) { el.hidden = true; return; }
     el.hidden = false;
-
-    $('rs-title').textContent = s.title || '';
-    $('rs-salary').textContent = s.salary || '';
 
     const expWrap = $('rs-experience');
     expWrap.textContent = '';
@@ -373,10 +352,17 @@
         const item = document.createElement('div');
         item.className = 'rs-exp-item';
         if (e.company) {
+          const { title, meta } = splitExperienceHeading(e.company);
           const co = document.createElement('div');
           co.className = 'rs-exp-company';
-          co.textContent = e.company;
+          co.textContent = title;
           item.appendChild(co);
+          if (meta) {
+            const metaEl = document.createElement('div');
+            metaEl.className = 'rs-exp-meta';
+            metaEl.textContent = meta;
+            item.appendChild(metaEl);
+          }
         }
         const body = document.createElement('div');
         body.className = 'rs-exp-body';
@@ -407,13 +393,24 @@
       s.education.forEach(ed => {
         const item = document.createElement('div');
         item.className = 'rs-edu-item';
-        item.textContent = '— ' + ed;
+        // Маркер рисует CSS — иначе у импортированных записей, уже
+        // начинающихся с тире, получалось двойное "— — МГТУ".
+        item.textContent = String(ed).replace(/^[—–-]\s*/, '');
         eduWrap.appendChild(item);
       });
     }
 
     $('rs-about-title').hidden = !s.about;
     $('rs-about').textContent = s.about || '';
+  }
+
+  // Подсказка в свёрнутом блоке: сколько символов уйдёт модели. Без неё
+  // непонятно, есть ли там вообще текст, пока блок закрыт.
+  function updateProfileTextHint(profile) {
+    const hint = $('profile-text-len');
+    if (!hint) return;
+    const len = ((profile && profile.text) || '').trim().length;
+    hint.textContent = len ? len.toLocaleString('ru-RU') + ' симв.' : 'пусто';
   }
 
   // ---------- импорт резюме с hh.ru ----------
@@ -466,7 +463,7 @@
 
     // Повторный импорт того же резюме (тот же url) обновляет существующий профиль,
     // а не плодит дубликаты.
-    let target = profilesCache.find(p => p.sourceUrl === resume.url);
+    let target = resumesCache.find(p => p.sourceUrl === resume.url);
     if (!target) {
       target = {
         id: genId(),
@@ -474,7 +471,7 @@
         source: 'hh-import',
         sourceUrl: resume.url
       };
-      profilesCache.push(target);
+      resumesCache.push(target);
     }
     target.text = resume.text;
     target.structured = {
@@ -482,12 +479,14 @@
       education: resume.education, skills: resume.skills, about: resume.about
     };
     target.updatedAt = Date.now();
-    activeProfileIdCache = target.id;
+    activeResumeIdCache = target.id;
 
-    await chrome.storage.local.set({ profiles: profilesCache, activeProfileId: activeProfileIdCache });
+    await chrome.storage.local.set({ savedResumes: resumesCache, activeResumeId: activeResumeIdCache });
     renderProfileSelect();
     $('profile-text').value = target.text;
     renderProfileStructuredView(target);
+    // Импортированное резюме сразу доступно для ATS-сравнения без перезагрузки.
+    await populateAtsResumeSelect();
 
     statusEl.textContent = 'Импортировано: ' + (resume.experience ? resume.experience.length : 0) +
       ' мест работы, ' + (resume.skills ? resume.skills.length : 0) + ' навыков, обновлено ' +
@@ -538,26 +537,59 @@
     lastAtsAuditResult = parsed;
 
     const overallScore = Math.round(Number(parsed.overall_ats_score) || computeScore(parsed) || 0);
-    setGauge('rr-score', 'rr-score-arc', overallScore, overallScore >= 75 ? 'good' : (overallScore >= 50 ? 'mid' : 'bad'));
+    setGauge('rr-score', 'rr-score-arc', overallScore, scoreKind(overallScore));
 
-    // Progress delta tracking with previous audit
+    const verdictTitle = $('rr-verdict-title');
+    if (verdictTitle) {
+      verdictTitle.textContent = overallScore >= 75
+        ? 'Резюме проходит ATS-фильтры'
+        : (overallScore >= 50 ? 'Проходит с оговорками' : 'Требует переработки');
+      verdictTitle.className = 'rr-verdict-title ' + scoreKind(overallScore);
+    }
+
+    // История аудитов ведётся ОТДЕЛЬНО по каждому резюме. Раньше она была
+    // общей, и после аудита второго резюме «динамика» сравнивала его с
+    // первым — то есть показывала разницу между разными документами,
+    // выдавая её за прогресс одного.
+    const auditedId = activeResumeIdCache;
     let progressDeltaText = 'Сравнение с прошлым аудитом появится при повторном запуске';
     try {
       const { ats_audit_history } = await chrome.storage.local.get('ats_audit_history');
-      const history = Array.isArray(ats_audit_history) ? ats_audit_history : [];
-      if (history.length > 0) {
-        const last = history[0];
-        const lastScore = Math.round(Number(last.overall_ats_score) || 0);
+      const all = Array.isArray(ats_audit_history) ? ats_audit_history : [];
+      const mine = all.filter(h => h.resumeId === auditedId);
+      if (mine.length > 0) {
+        const lastScore = Math.round(Number(mine[0].overall_ats_score) || 0);
         const diff = overallScore - lastScore;
-        const diffStr = diff > 0 ? `+${diff}%` : `${diff}%`;
-        progressDeltaText = `Динамика к прошлому аудиту: ${diffStr} (ранее: ${lastScore}%)`;
+        const when = mine[0].date ? new Date(mine[0].date).toLocaleDateString('ru-RU') : '';
+        progressDeltaText = diff === 0
+          ? `Без изменений с прошлого аудита (${when})`
+          : `${diff > 0 ? '+' : ''}${diff} к прошлому аудиту (было ${lastScore}, ${when})`;
       }
-      history.unshift({ date: new Date().toISOString(), overall_ats_score: overallScore, result: parsed });
-      await chrome.storage.local.set({ ats_audit_history: history.slice(0, 20) });
+      all.unshift({
+        resumeId: auditedId,
+        date: new Date().toISOString(),
+        overall_ats_score: overallScore,
+        result: parsed
+      });
+      await chrome.storage.local.set({ ats_audit_history: all.slice(0, 20) });
     } catch (e) {
       console.error('Audit history save failed', e);
     }
     if ($('rr-progress-delta')) $('rr-progress-delta').textContent = progressDeltaText;
+
+    // Оценка запоминается на самом резюме, чтобы её было видно в сводке
+    // профиля без повторного запуска разбора.
+    const audited = resumesCache.find(r => r.id === auditedId);
+    if (audited) {
+      audited.atsScore = overallScore;
+      audited.atsScoreAt = Date.now();
+      try {
+        await chrome.storage.local.set({ savedResumes: resumesCache });
+        renderProfileSummary(audited, audited.structured || parseImportedText(audited.text));
+      } catch (e) {
+        console.error('ATS score save failed', e);
+      }
+    }
 
     // Sub-scores
     const sb = parsed.score_breakdown || {};
@@ -575,7 +607,7 @@
         const row = document.createElement('div');
         row.className = 'ats-req-item';
         row.style.marginBottom = '4px';
-        row.innerHTML = `<div class="ats-req-head"><span class="ats-req-title"><b>${is.area || 'Критерий'}:</b> ${is.issue || ''}</span></div><div class="meta" style="margin-top:2px;">Влияние: ${is.impact || ''}</div>`;
+        row.innerHTML = `<div class="ats-req-head"><span class="ats-req-title"><b>${esc(is.area || 'Критерий')}:</b> ${esc(is.issue)}</span></div><div class="meta" style="margin-top:2px;">Влияние: ${esc(is.impact)}</div>`;
         issuesWrap.appendChild(row);
       });
     }
@@ -592,7 +624,7 @@
         parsed.action_items.forEach(act => {
           const card = document.createElement('div');
           card.className = 'ats-edit-card';
-          card.innerHTML = `<div class="ats-edit-text">${act}</div>`;
+          card.innerHTML = `<div class="ats-edit-text">${esc(act)}</div>`;
           expWrap.appendChild(card);
         });
       } else {
@@ -600,9 +632,9 @@
           const card = document.createElement('div');
           card.className = 'ats-edit-card';
           card.innerHTML = `
-            <div class="ats-edit-section">${exp.company || 'Компания / Опыт'}</div>
-            <div class="ats-edit-gap" style="color:var(--red);">Проблема: ${Array.isArray(exp.issues) ? exp.issues.join('; ') : (exp.issues || '')}</div>
-            <div class="ats-edit-text" style="color:var(--green-hover);"><b>Переформулировка:</b> ${exp.suggested_rewrite || ''}</div>
+            <div class="ats-edit-section">${esc(exp.company || 'Компания / Опыт')}</div>
+            <div class="ats-edit-gap" style="color:var(--red);">Проблема: ${esc(Array.isArray(exp.issues) ? exp.issues.join('; ') : exp.issues)}</div>
+            <div class="ats-edit-text" style="color:var(--green-hover);"><b>Переформулировка:</b> ${esc(exp.suggested_rewrite)}</div>
           `;
           expWrap.appendChild(card);
         });
@@ -615,10 +647,10 @@
       const hh = parsed.hh_ranking_factors || {};
       hhBox.innerHTML = `
         <div style="font-size:12.5px; line-height:1.5;">
-          <div><b>Обновление:</b> ${hh.last_update || 'не зафиксировано'}</div>
-          <div><b>Статус поиска:</b> ${hh.search_status || 'не зафиксировано'}</div>
-          <div><b>Плотность превью:</b> ${hh.card_preview_density || 'средняя'}</div>
-          ${hh.notes ? `<div class="meta" style="margin-top:4px;">${hh.notes}</div>` : ''}
+          <div><b>Обновление:</b> ${esc(hh.last_update || 'не зафиксировано')}</div>
+          <div><b>Статус поиска:</b> ${esc(hh.search_status || 'не зафиксировано')}</div>
+          <div><b>Плотность превью:</b> ${esc(hh.card_preview_density || 'средняя')}</div>
+          ${hh.notes ? `<div class="meta" style="margin-top:4px;">${esc(hh.notes)}</div>` : ''}
         </div>
       `;
     }
@@ -647,10 +679,10 @@
           row.style.marginBottom = '4px';
           row.innerHTML = `
             <div class="ats-req-head">
-              <span class="ats-req-title"><b>${r.title_ru || ''}</b> / ${r.title_en || ''}</span>
-              <span class="chip chip-mini ${cat.color}">${r.match_percent || 0}%</span>
+              <span class="ats-req-title"><b>${esc(r.title_ru)}</b> / ${esc(r.title_en)}</span>
+              <span class="chip chip-mini ${cat.color}">${Math.round(Number(r.match_percent) || 0)}%</span>
             </div>
-            <div class="meta" style="margin-top:2px;">${r.reasoning || ''}</div>
+            <div class="meta" style="margin-top:2px;">${esc(r.reasoning)}</div>
           `;
           rolesWrap.appendChild(row);
         });
@@ -670,10 +702,10 @@
         block.style.cssText = 'background:var(--paper); padding:10px; margin-bottom:8px;';
         const clusterTitle = clusterKey === 'core' ? 'Кластер: Core' : (clusterKey === 'transferable' ? 'Кластер: Transferable' : 'Кластер: Growth');
         block.innerHTML = `
-          <div style="font-weight:700; font-size:13px; margin-bottom:6px; color:var(--ink);">${clusterTitle}</div>
-          <div style="margin-bottom:4px;"><b>Hard Skills & Tools:</b> <span class="meta">${(cluster.hard_skills_tools || []).join(', ')}</span></div>
-          <div style="margin-bottom:4px;"><b>Домен & Методологии:</b> <span class="meta">${(cluster.domain_methodology || []).join(', ')}</span></div>
-          <div><b>Активные глаголы:</b> <span class="meta">${(cluster.action_verbs || []).join(', ')}</span></div>
+          <div style="font-weight:700; font-size:13px; margin-bottom:6px; color:var(--ink);">${esc(clusterTitle)}</div>
+          <div style="margin-bottom:4px;"><b>Hard Skills &amp; Tools:</b> <span class="meta">${esc((cluster.hard_skills_tools || []).join(', '))}</span></div>
+          <div style="margin-bottom:4px;"><b>Домен &amp; Методологии:</b> <span class="meta">${esc((cluster.domain_methodology || []).join(', '))}</span></div>
+          <div><b>Активные глаголы:</b> <span class="meta">${esc((cluster.action_verbs || []).join(', '))}</span></div>
         `;
         kwWrap.appendChild(block);
       });
@@ -690,10 +722,10 @@
         card.style.marginBottom = '4px';
         card.innerHTML = `
           <div class="ats-req-head">
-            <span class="ats-req-title"><b>Шаг ${idx + 1}:</b> ${item.action || ''}</span>
-            <span class="chip chip-mini chip-mid">${item.target_section || 'Раздел'}</span>
+            <span class="ats-req-title"><b>Шаг ${idx + 1}:</b> ${esc(item.action)}</span>
+            <span class="chip chip-mini chip-mid">${esc(item.target_section || 'Раздел')}</span>
           </div>
-          <div class="meta" style="margin-top:2px;"><b>Зачем:</b> ${item.why || ''}</div>
+          <div class="meta" style="margin-top:2px;"><b>Зачем:</b> ${esc(item.why)}</div>
         `;
         checkWrap.appendChild(card);
       });
@@ -1468,6 +1500,15 @@
     select.value = activeAtsResumeId;
     select._resumes = savedResumes;
 
+    // Сравнивать нечего, пока резюме одно — не показываем кнопку вместо
+    // того, чтобы показывать её и ругаться при нажатии.
+    const compareBtn = $('btn-ats-compare-all');
+    if (compareBtn) {
+      const withText = savedResumes.filter(r => r.text && r.text.trim()).length;
+      compareBtn.hidden = withText < 2;
+      compareBtn.textContent = `Сравнить все резюме (${withText}) под эту вакансию`;
+    }
+
     const currentResume = savedResumes.find(r => r.id === activeAtsResumeId) || savedResumes[0];
     if (currentResume && $('ats-inline-resume')) {
       $('ats-inline-resume').value = currentResume.text || '';
@@ -1654,6 +1695,200 @@
     runAtsMatch(description, fullResume, currentResumeObj);
   });
 
+  // ---------- сравнение версий резюме под одну вакансию ----------
+  //
+  // Мульти-резюме существует ровно затем, чтобы держать разные варианты
+  // позиционирования. Но до сих пор выбор между ними был вслепую: прогнать
+  // разбор можно было только по одному. Здесь мы прогоняем вакансию через
+  // каждое сохранённое резюме и показываем, какое из них реально закрывает
+  // больше обязательных требований.
+  //
+  // Запросы идут последовательно, а не параллельно: провайдеры (особенно
+  // бесплатный тариф NVIDIA NIM) отвечают 429 на веер одновременных вызовов,
+  // и sendWithRetry уже умеет ждать — параллель только сломала бы его планы
+  // повторов.
+  // Отбрасывает непосчитанные резюме и ранжирует остальные по покрытию
+  // ОБЯЗАТЕЛЬНЫХ требований, а не по общему баллу: именно обязательные
+  // решают, пройдёт ли резюме формальный фильтр. Резюме с общим баллом 80
+  // и дырой в обязательном требовании хуже, чем резюме с баллом 70 без дыр.
+  // Общий балл — только тай-брейк.
+  function rankResumeMatches(scored) {
+    return scored
+      .filter(s => s && !s.failed)
+      .slice()
+      .sort((a, b) => (b.hard - a.hard) || (b.overall - a.overall));
+  }
+
+  async function runResumeComparison(description) {
+    const compareBtn = $('btn-ats-compare-all');
+    const { savedResumes } = await JFC.ensureSavedResumes();
+    const candidates = savedResumes.filter(r => r.text && r.text.trim());
+
+    if (candidates.length < 2) {
+      showAtsError('Нужно минимум два сохранённых резюме. Добавь второй вариант позиционирования в настройках.');
+      return;
+    }
+
+    clearAtsError();
+    $('ats-result').hidden = true;
+    $('ats-compare-result').hidden = true;
+    compareBtn.disabled = true;
+    $('btn-ats-check').disabled = true;
+    $('ats-loading').style.display = 'block';
+    const loadingLabel = $('ats-loading-label');
+
+    currentVacancy.description = description;
+    const scored = [];
+
+    try {
+      for (let i = 0; i < candidates.length; i++) {
+        const resume = candidates[i];
+        const progress = `Резюме ${i + 1} из ${candidates.length}: ${resume.name}`;
+        const resp = await sendWithRetry(
+          { type: 'MATCH_ATS', vacancy: currentVacancy, fullResume: resume.text },
+          loadingLabel,
+          progress
+        );
+
+        if (!resp || !resp.ok) {
+          if (resp && resp.code === 'NO_API_KEY') {
+            showError('Не указан API-ключ. Добавь его в настройках.');
+            openSettingsBtn.hidden = false;
+            return;
+          }
+          // Одно упавшее резюме не должно ронять всё сравнение — помечаем
+          // его как непосчитанное и продолжаем с остальными.
+          scored.push({ resume, failed: true, reason: (resp && resp.code) || 'NETWORK' });
+          continue;
+        }
+
+        const r = resp.result;
+        scored.push({
+          resume,
+          failed: false,
+          hard: Math.round(Number(r.hard_requirements_coverage_percent) || 0),
+          nice: Math.round(Number(r.nice_to_have_coverage_percent) || 0),
+          overall: Math.round(Number(r.overall_match_score) || 0),
+          gaps: Array.isArray(r.critical_gaps) ? r.critical_gaps : [],
+          result: r
+        });
+      }
+
+      const ok = rankResumeMatches(scored);
+      if (!ok.length) {
+        showAtsError('Ни одно резюме не удалось сравнить. Проверь подключение и попробуй ещё раз.');
+        return;
+      }
+      renderResumeComparison(ok, scored.filter(s => s.failed), description);
+    } catch (e) {
+      showAtsError('Не получилось сравнить резюме. Проверь подключение.');
+      console.error(e);
+    } finally {
+      compareBtn.disabled = false;
+      $('btn-ats-check').disabled = false;
+      $('ats-loading').style.display = 'none';
+    }
+  }
+
+  function renderResumeComparison(ranked, failed, description) {
+    const wrap = $('ats-compare-list');
+    wrap.textContent = '';
+
+    $('ats-compare-count').textContent = ranked.length + ' из ' + (ranked.length + failed.length);
+    $('ats-compare-vacancy').textContent = currentVacancy.title
+      ? 'Вакансия: ' + currentVacancy.title
+      : 'Вакансия из текста длиной ' + description.length.toLocaleString('ru-RU') + ' симв.';
+
+    const best = ranked[0];
+
+    ranked.forEach((entry, idx) => {
+      const row = document.createElement('div');
+      row.className = 'cmp-row' + (idx === 0 ? ' cmp-row--best' : '');
+
+      const head = document.createElement('div');
+      head.className = 'cmp-head';
+
+      const name = document.createElement('span');
+      name.className = 'cmp-name';
+      name.textContent = entry.resume.name;
+      head.appendChild(name);
+
+      if (idx === 0) {
+        const badge = document.createElement('span');
+        badge.className = 'chip chip-mini chip-good';
+        badge.textContent = 'отправлять это';
+        head.appendChild(badge);
+      } else {
+        const diff = entry.hard - best.hard;
+        const badge = document.createElement('span');
+        badge.className = 'chip chip-mini chip-neutral';
+        badge.textContent = diff === 0 ? 'столько же' : diff + ' п.п.';
+        head.appendChild(badge);
+      }
+      row.appendChild(head);
+
+      const bar = document.createElement('div');
+      bar.className = 'cmp-bar';
+      const fill = document.createElement('span');
+      fill.className = 'bg-' + scoreKind(entry.hard);
+      fill.style.width = Math.max(entry.hard, 2) + '%';
+      bar.appendChild(fill);
+      row.appendChild(bar);
+
+      const nums = document.createElement('div');
+      nums.className = 'cmp-nums';
+      nums.textContent = `обязательные ${entry.hard}% · желательные ${entry.nice}% · общий ${entry.overall}`;
+      row.appendChild(nums);
+
+      if (entry.gaps.length) {
+        const gaps = document.createElement('div');
+        gaps.className = 'cmp-gaps';
+        gaps.textContent = 'Не закрыто: ' + entry.gaps.slice(0, 3).join('; ');
+        row.appendChild(gaps);
+      }
+
+      // Кнопка открывает полный разбор именно этой версии — иначе после
+      // сравнения пришлось бы прогонять её заново.
+      const open = document.createElement('button');
+      open.className = 'linkbtn';
+      open.type = 'button';
+      open.textContent = 'открыть полный разбор';
+      open.addEventListener('click', () => {
+        renderAtsResult(entry.result, description);
+        $('ats-result').hidden = false;
+        $('ats-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      row.appendChild(open);
+
+      wrap.appendChild(row);
+    });
+
+    const note = $('ats-compare-note');
+    const spread = best.hard - ranked[ranked.length - 1].hard;
+    let text = ranked.length > 1 && spread === 0
+      ? 'Все версии закрывают обязательные требования одинаково — разницы для этой вакансии нет.'
+      : `Разброс по обязательным требованиям — ${spread} п.п. Сортировка по ним, а не по общему баллу: именно обязательные решают, пройдёте ли вы формальный фильтр.`;
+    if (failed.length) {
+      text += ` Не удалось посчитать: ${failed.map(f => f.resume.name).join(', ')}.`;
+    }
+    note.textContent = text;
+
+    $('ats-compare-result').hidden = false;
+  }
+
+  if ($('btn-ats-compare-all')) {
+    $('btn-ats-compare-all').addEventListener('click', async () => {
+      const description = (atsVacancyTextarea && atsVacancyTextarea.value.trim()) || vacancyTextarea.value.trim();
+      if (!description) {
+        showAtsError('Нет текста вакансии. Открой страницу вакансии или вставь текст вручную.');
+        return;
+      }
+      const keyCheck = await hasApiKeyForActiveModel();
+      if (!keyCheck.ok) { showNoApiKey(keyCheck.modelKey); return; }
+      runResumeComparison(description);
+    });
+  }
+
   async function runAtsMatch(description, fullResume, resumeObj) {
     $('btn-ats-check').disabled = true;
     $('ats-loading').style.display = 'block';
@@ -1712,6 +1947,11 @@
     $('ats-hard-pct').textContent = hardPct + '%';
     $('ats-nice-pct').textContent = nicePct + '%';
     $('ats-score').textContent = overallScore + '%';
+
+    // Кольца рядом с процентами до v0.4.5 не обновлялись ни одной строкой кода —
+    // менялся только текст, а дуги оставались в статичном состоянии из разметки.
+    setArc($('ats-hard-arc'), hardPct, scoreKind(hardPct));
+    setArc($('ats-nice-arc'), nicePct, scoreKind(nicePct));
 
     renderAtsReqList($('ats-hard-reqs-list'), parsed.hard_requirements);
     renderAtsReqList($('ats-nice-reqs-list'), parsed.nice_to_have);
@@ -1839,6 +2079,326 @@
     });
   }
 
+  // ---------- Сборка автономных HTML-отчётов ----------
+  //
+  // Отчёт открывается вне расширения (blob-вкладка, скачанный файл, печать в
+  // PDF), поэтому он обязан быть полностью самодостаточным: только инлайновые
+  // стили и SVG, ни одного внешнего запроса. Весь текст модели проходит через
+  // esc() — здесь это уже не «на всякий случай», а обязательное требование:
+  // CSP расширения на выгруженный файл не распространяется.
+
+  const REPORT_CSS = `
+    :root {
+      --bg: #F2F2F7; --card: #FFFFFF; --ink: #1C1C1E; --muted: #6C6C70;
+      --line: #E5E5EA; --accent: #FF9500; --blue: #4A7FD4;
+      --green: #34C759; --amber: #FF9500; --red: #FF3B30;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000; --card: #1C1C1E; --ink: #F2F2F7; --muted: #98989F;
+        --line: #38383A; --accent: #FF9F0A; --blue: #6C9BEA;
+        --green: #30D158; --amber: #FF9F0A; --red: #FF453A;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 32px 20px 64px; background: var(--bg); color: var(--ink);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    header { margin-bottom: 28px; }
+    h1 { font-size: 30px; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 6px; font-weight: 800; }
+    .sub { color: var(--muted); font-size: 14px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 20px; margin-bottom: 16px;
+    }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+         color: var(--muted); margin: 0 0 14px; font-weight: 700; }
+    h3 { font-size: 15px; margin: 18px 0 8px; font-weight: 700; }
+    .hero { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .hero .verdict { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+    .gauge { position: relative; width: 132px; height: 132px; flex: none; }
+    .gauge svg { transform: rotate(-90deg); }
+    .gauge .num {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+    .tile { background: var(--bg); border-radius: 12px; padding: 14px; }
+    .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .tile .v { font-size: 24px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .bar-row { margin-bottom: 12px; }
+    .bar-head { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 5px; }
+    .bar-head b { font-variant-numeric: tabular-nums; }
+    .bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+    .bar span { display: block; height: 100%; border-radius: 999px; }
+    .good { color: var(--green); } .mid { color: var(--amber); } .bad { color: var(--red); }
+    .bg-good { background: var(--green); } .bg-mid { background: var(--amber); } .bg-bad { background: var(--red); }
+    .item { border-top: 1px solid var(--line); padding: 12px 0; }
+    .item:first-of-type { border-top: none; padding-top: 0; }
+    .item .t { font-weight: 600; }
+    .item .m { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+    .rewrite { color: var(--green); font-size: 13.5px; margin-top: 5px; }
+    .chip {
+      display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px;
+      font-weight: 600; background: var(--bg); border: 1px solid var(--line);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .empty { color: var(--muted); font-style: italic; }
+    footer { margin-top: 28px; color: var(--muted); font-size: 12.5px; text-align: center; }
+    footer a { color: var(--blue); }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card { break-inside: avoid; border-color: #ddd; }
+      footer { position: fixed; bottom: 0; left: 0; right: 0; }
+    }
+  `;
+
+  function reportShell(title, subtitle, bodyHtml) {
+    const stamp = new Date().toLocaleString('ru-RU');
+    return `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<style>${REPORT_CSS}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>${esc(title)}</h1>
+    <div class="sub">${esc(subtitle)} · сформировано ${esc(stamp)}</div>
+  </header>
+  ${bodyHtml}
+  <footer>
+    Job Fit Copilot ${esc(APP_VERSION)} · отчёт сформирован локально в браузере,
+    данные никуда не отправлялись ·
+    <a href="https://github.com/zhurik77/jobfitcopilot">github.com/zhurik77/jobfitcopilot</a>
+  </footer>
+</div>
+</body>
+</html>`;
+  }
+
+  // Кольцо-индекс для отчёта: тот же расчёт, что и в панели, но выводом в
+  // строку — в автономном файле нет нашего JS, поэтому дуга считается здесь.
+  function reportGauge(score, kind) {
+    const r = 58;
+    const circumference = 2 * Math.PI * r;
+    const clamped = Math.max(0, Math.min(100, Number(score) || 0));
+    const offset = circumference * (1 - clamped / 100);
+    const stroke = kind === 'good' ? 'var(--green)' : (kind === 'mid' ? 'var(--amber)' : 'var(--red)');
+    return `<div class="gauge">
+      <svg viewBox="0 0 132 132" width="132" height="132">
+        <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--line)" stroke-width="10"/>
+        <circle cx="66" cy="66" r="${r}" fill="none" stroke="${stroke}" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="${circumference.toFixed(1)}"
+                stroke-dashoffset="${offset.toFixed(1)}"/>
+      </svg>
+      <div class="num ${kind}">${Math.round(clamped)}</div>
+    </div>`;
+  }
+
+  function reportBar(label, value) {
+    const val = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    const kind = scoreKind(val);
+    return `<div class="bar-row">
+      <div class="bar-head"><span>${esc(label)}</span><b class="${kind}">${val}%</b></div>
+      <div class="bar"><span class="bg-${kind}" style="width:${val}%"></span></div>
+    </div>`;
+  }
+
+  function reportCard(heading, inner) {
+    return `<section class="card"><h2>${esc(heading)}</h2>${inner}</section>`;
+  }
+
+  function buildAtsAuditReportHtml(parsed, resumeName) {
+    const score = Math.round(Number(parsed.overall_ats_score) || 0);
+    const kind = scoreKind(score);
+    const sb = parsed.score_breakdown || {};
+
+    const summary = reportCard('Итоговая ATS-оценка', `
+      <div class="hero">
+        ${reportGauge(score, kind)}
+        <div style="flex:1; min-width:220px;">
+          <div class="verdict ${kind}">${esc(
+            kind === 'good' ? 'Резюме проходит ATS-фильтры'
+              : (kind === 'mid' ? 'Резюме проходит с оговорками' : 'Резюме требует переработки')
+          )}</div>
+          <p style="color:var(--muted); margin:8px 0 0;">${esc(parsed.value_proposition || '')}</p>
+        </div>
+      </div>`);
+
+    const breakdown = reportCard('Разбор по критериям', [
+      reportBar('Совпадение ключевых слов (вес 35%)', sb.keyword_match_score),
+      reportBar('Структура резюме (вес 20%)', sb.structure_score),
+      reportBar('Релевантность опыта (вес 25%)', sb.experience_relevance_score),
+      reportBar('Плотность метрик (вес 20%)', sb.metrics_density_score),
+      renderReportIssues(sb.issues)
+    ].join(''));
+
+    const experience = reportListCard('Построчный разбор опыта', parsed.experience_breakdown, exp => `
+      <div class="item">
+        <div class="t">${esc(exp.company || 'Опыт работы')}</div>
+        <div class="m">${esc(Array.isArray(exp.issues) ? exp.issues.join('; ') : exp.issues)}</div>
+        <div class="rewrite">→ ${esc(exp.suggested_rewrite)}</div>
+      </div>`);
+
+    const roles = buildRolesSection(parsed.target_roles);
+    const keywords = buildKeywordSection(parsed.keyword_matrix);
+
+    const checklist = reportListCard('Чек-лист оптимизации', parsed.optimization_checklist, (item, i) => `
+      <div class="item">
+        <div class="t">Шаг ${i + 1}: ${esc(item.action)} <span class="chip">${esc(item.target_section || 'Раздел')}</span></div>
+        <div class="m">${esc(item.why)}</div>
+      </div>`);
+
+    const hh = parsed.hh_ranking_factors || {};
+    const ranking = reportCard('Факторы ранжирования hh.ru', `
+      <table>
+        <tr><th>Обновление резюме</th><td>${esc(hh.last_update || 'не оценено')}</td></tr>
+        <tr><th>Статус поиска</th><td>${esc(hh.search_status || 'не оценено')}</td></tr>
+        <tr><th>Плотность превью</th><td>${esc(hh.card_preview_density || 'не оценено')}</td></tr>
+      </table>
+      ${hh.notes ? `<p class="m" style="margin-bottom:0;">${esc(hh.notes)}</p>` : ''}`);
+
+    return reportShell(
+      'ATS-аудит резюме',
+      'Резюме: ' + (resumeName || 'без названия'),
+      summary + breakdown + experience + roles + keywords + checklist + ranking
+    );
+  }
+
+  function renderReportIssues(issues) {
+    const list = Array.isArray(issues) ? issues : [];
+    if (!list.length) return '';
+    return '<h3>Что снижает проходимость</h3>' + list.map(is => `
+      <div class="item">
+        <div class="t">${esc(is.area || 'Критерий')}</div>
+        <div class="m">${esc(is.issue)}</div>
+        <div class="m">Влияние: ${esc(is.impact)}</div>
+      </div>`).join('');
+  }
+
+  // Общая обёртка для «карточка со списком, либо честная пометка, что пусто».
+  function reportListCard(heading, list, itemFn) {
+    const items = Array.isArray(list) ? list : [];
+    if (!items.length) return reportCard(heading, '<div class="empty">Модель не вернула данные по этому разделу.</div>');
+    return reportCard(heading, items.map(itemFn).join(''));
+  }
+
+  function buildRolesSection(targetRoles) {
+    const roles = targetRoles || {};
+    const groups = [
+      { key: 'core', title: 'Core — прямое попадание' },
+      { key: 'transferable', title: 'Transferable — смежные навыки' },
+      { key: 'growth', title: 'Growth — рост и смена вектора' }
+    ];
+    const body = groups.map(g => {
+      const list = Array.isArray(roles[g.key]) ? roles[g.key] : [];
+      if (!list.length) return '';
+      const rows = list.map(r => `
+        <tr>
+          <td>${esc(r.title_ru)}</td>
+          <td class="m">${esc(r.title_en)}</td>
+          <td class="num ${scoreKind(Number(r.match_percent) || 0)}">${Math.round(Number(r.match_percent) || 0)}%</td>
+        </tr>
+        <tr><td colspan="3" class="m" style="padding-top:0; border-bottom:none;">${esc(r.reasoning)}</td></tr>`).join('');
+      return `<h3>${esc(g.title)} — ${list.length}</h3>
+        <table><tr><th>Роль</th><th>Title</th><th style="text-align:right;">Совпадение</th></tr>${rows}</table>`;
+    }).join('');
+    if (!body) return reportCard('Подходящие роли', '<div class="empty">Модель не вернула список ролей.</div>');
+    return reportCard('Подходящие роли', body);
+  }
+
+  function buildKeywordSection(keywordMatrix) {
+    const matrix = keywordMatrix || {};
+    const titles = { core: 'Core', transferable: 'Transferable', growth: 'Growth' };
+    const chipRow = (label, arr) => {
+      const list = Array.isArray(arr) ? arr : [];
+      if (!list.length) return '';
+      return `<div style="margin-top:8px;"><b style="font-size:13px;">${esc(label)}</b>
+        <div class="chips">${list.map(k => `<span class="chip">${esc(k)}</span>`).join('')}</div></div>`;
+    };
+    const body = ['core', 'transferable', 'growth'].map(key => {
+      const cluster = matrix[key];
+      if (!cluster) return '';
+      return `<h3>Кластер: ${esc(titles[key])}</h3>
+        ${chipRow('Hard skills и инструменты', cluster.hard_skills_tools)}
+        ${chipRow('Домен и методологии', cluster.domain_methodology)}
+        ${chipRow('Активные глаголы', cluster.action_verbs)}`;
+    }).join('');
+    if (!body) return reportCard('Карта ключевых слов', '<div class="empty">Модель не вернула карту ключевых слов.</div>');
+    return reportCard('Карта ключевых слов', body);
+  }
+
+  function buildAnalyticsReportHtml(items) {
+    const list = Array.isArray(items) ? items : [];
+    const total = list.length;
+
+    if (!total) {
+      return reportShell('Аналитика откликов', 'История пуста',
+        reportCard('Нет данных', '<div class="empty">Ни одной проверки ещё не сохранено — запусти разбор вакансии, и отчёт наполнится.</div>'));
+    }
+
+    const scores = list.map(i => Number(i.score) || 0);
+    const avg = Math.round(scores.reduce((s, v) => s + v, 0) / total);
+    const applied = list.filter(i => i.applied).length;
+    const now = Date.now();
+    const within = days => list.filter(i => (now - new Date(i.date || 0).getTime()) <= days * 86400 * 1000).length;
+
+    const tiles = reportCard('Сводка', `<div class="grid">
+      <div class="tile"><div class="k">Всего проверок</div><div class="v">${total}</div></div>
+      <div class="tile"><div class="k">За 7 / 30 дней</div><div class="v">${within(7)} / ${within(30)}</div></div>
+      <div class="tile"><div class="k">Средний индекс</div><div class="v ${scoreKind(avg)}">${avg}</div></div>
+      <div class="tile"><div class="k">Откликов отправлено</div><div class="v">${applied} <span style="font-size:14px; color:var(--muted);">(${Math.round(applied / total * 100)}%)</span></div></div>
+    </div>`);
+
+    const verdictCounts = {};
+    list.forEach(i => { const v = i.verdict || '—'; verdictCounts[v] = (verdictCounts[v] || 0) + 1; });
+    const verdicts = reportCard('Распределение вердиктов',
+      Object.keys(verdictCounts)
+        .sort((a, b) => verdictCounts[b] - verdictCounts[a])
+        .map(v => reportBar(v + ' — ' + verdictCounts[v] + ' шт', verdictCounts[v] / total * 100))
+        .join(''));
+
+    const sourceCounts = {};
+    list.forEach(i => { const s = i.source || 'другое'; sourceCounts[s] = (sourceCounts[s] || 0) + 1; });
+    const sources = reportCard('Источники вакансий',
+      Object.keys(sourceCounts)
+        .sort((a, b) => sourceCounts[b] - sourceCounts[a])
+        .map(s => reportBar(s + ' — ' + sourceCounts[s] + ' шт', sourceCounts[s] / total * 100))
+        .join(''));
+
+    const rows = list.map(i => {
+      const score = Math.round(Number(i.score) || 0);
+      const when = i.date ? new Date(i.date).toLocaleDateString('ru-RU') : '—';
+      return `<tr>
+        <td>${esc(when)}</td>
+        <td>${esc(i.title || 'Вакансия')}</td>
+        <td>${esc(i.source || '—')}</td>
+        <td>${esc(i.verdict || '—')}</td>
+        <td>${i.applied ? 'да' : '—'}</td>
+        <td class="num ${scoreKind(score)}">${score}</td>
+      </tr>`;
+    }).join('');
+
+    const table = reportCard('Все проверки', `<table>
+      <tr><th>Дата</th><th>Вакансия</th><th>Источник</th><th>Вердикт</th><th>Отклик</th><th style="text-align:right;">Индекс</th></tr>
+      ${rows}
+    </table>`);
+
+    return reportShell('Аналитика откликов', `${total} проверок · средний индекс ${avg}`,
+      tiles + verdicts + sources + table);
+  }
+
   // ---------- Экспорт отчётов в отдельную вкладку / файл ----------
 
   function openReportInNewTab(htmlContent) {
@@ -1863,14 +2423,20 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // Имя резюме в шапке отчёта — то, что реально выбрано, а не заглушка:
+  // при мульти-резюме иначе непонятно, какую версию аудировали.
+  function auditedResumeName() {
+    const active = resumesCache.find(r => r.id === activeResumeIdCache);
+    return (active && active.name) || 'без названия';
+  }
+
   if ($('btn-export-ats-report')) {
     $('btn-export-ats-report').addEventListener('click', () => {
       if (!lastAtsAuditResult) {
         showError('Сначала запусти оценку резюме во вкладке «Профиль».');
         return;
       }
-      const html = buildAtsAuditReportHtml(lastAtsAuditResult, 'Основной профиль');
-      openReportInNewTab(html);
+      openReportInNewTab(buildAtsAuditReportHtml(lastAtsAuditResult, auditedResumeName()));
     });
   }
 
@@ -1880,7 +2446,7 @@
         showError('Сначала запусти оценку резюме во вкладке «Профиль».');
         return;
       }
-      const html = buildAtsAuditReportHtml(lastAtsAuditResult, 'Основной профиль');
+      const html = buildAtsAuditReportHtml(lastAtsAuditResult, auditedResumeName());
       const filename = `job-fit-copilot-ats-audit-${new Date().toISOString().slice(0, 10)}.html`;
       downloadReport(html, filename);
     });
@@ -1965,12 +2531,8 @@
     chrome.tabs.onActivated.addListener(() => safeExtractFromActiveTab());
   }
 
-  // Версия читается из manifest.json динамически, а не хардкодится здесь —
-  // единственный источник истины, чтобы UI не мог разойтись с реальной версией.
   const versionEl = $('app-version');
-  if (versionEl && chrome.runtime && chrome.runtime.getManifest) {
-    versionEl.textContent = 'v' + chrome.runtime.getManifest().version;
-  }
+  if (versionEl) versionEl.textContent = APP_VERSION;
 
   // ---------- init ----------
 

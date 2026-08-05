@@ -1,6 +1,6 @@
 // Job Fit Copilot — страница настроек.
 (function () {
-  const { DEFAULT_PROFILE, DEFAULT_MODEL, genId, ensureProfiles } = globalThis.JFC;
+  const { DEFAULT_PROFILE, DEFAULT_MODEL, genId, ensureSavedResumes } = globalThis.JFC;
   const $ = id => document.getElementById(id);
 
   // Одно поле на каждую запись в JFC.MODELS — ключ хранится под тем же именем.
@@ -20,14 +20,17 @@
     setTimeout(() => { btn.textContent = old; }, 1400);
   }
 
+  // Текст резюме сюда намеренно не подставляется: тем же полем #opt-full-resume
+  // владеет секция резюме ниже (renderSelectedResume). Раньше обе функции
+  // писали в него параллельно, и содержимое textarea зависело от того, чей
+  // await разрешится последним.
   async function load() {
-    const { apiKeys, model, letterLang, fullResumeText } = await chrome.storage.local.get(['apiKeys', 'model', 'letterLang', 'fullResumeText']);
+    const { apiKeys, model, letterLang } = await chrome.storage.local.get(['apiKeys', 'model', 'letterLang']);
     for (const key of Object.keys(apiKeyInputs)) {
       apiKeyInputs[key].value = (apiKeys && apiKeys[key]) || '';
     }
     modelSelect.value = model || DEFAULT_MODEL;
     langSelect.value = letterLang || 'auto';
-    if ($('opt-full-resume')) $('opt-full-resume').value = fullResumeText || '';
   }
 
   $('opt-toggle-key').addEventListener('click', (e) => {
@@ -43,12 +46,12 @@
     try {
       const apiKeys = {};
       for (const key of Object.keys(apiKeyInputs)) apiKeys[key] = apiKeyInputs[key].value.trim();
-      const fullResumeText = $('opt-full-resume') ? $('opt-full-resume').value.trim() : '';
+      // Резюме сохраняется своей кнопкой «Сохранить текст» в savedResumes —
+      // общая кнопка отвечает только за ключи, модель и язык писем.
       await chrome.storage.local.set({
         apiKeys,
         model: modelSelect.value,
-        letterLang: langSelect.value,
-        fullResumeText
+        letterLang: langSelect.value
       });
       flashButton(saveBtn, 'Сохранено ✓');
     } catch (err) {
@@ -56,101 +59,10 @@
     }
   });
 
-  // ---------- профили кандидата (несколько именованных резюме) ----------
-
-  const profileSelect = $('opt-profile-select');
-  const profileNameInput = $('opt-profile-name');
-  const profileTextarea = $('opt-profile');
-  const profileMeta = $('opt-profile-meta');
-
-  let profilesCache = [];
-  let activeProfileIdCache = null;
-
-  function renderProfileSelect() {
-    profileSelect.innerHTML = '';
-    profilesCache.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.name + (p.source === 'hh-import' ? ' (hh.ru)' : '');
-      profileSelect.appendChild(opt);
-    });
-    profileSelect.value = activeProfileIdCache;
-  }
-
-  function renderSelectedProfile() {
-    const p = profilesCache.find(x => x.id === activeProfileIdCache);
-    profileNameInput.value = p ? p.name : '';
-    profileTextarea.value = p ? p.text : '';
-    profileMeta.textContent = p
-      ? 'Источник: ' + (p.source === 'hh-import' ? 'импортировано с hh.ru' : 'вручную') +
-        (p.updatedAt ? ' · обновлено ' + new Date(p.updatedAt).toLocaleString('ru-RU') : '')
-      : '';
-  }
-
-  async function persistProfiles() {
-    await chrome.storage.local.set({ profiles: profilesCache, activeProfileId: activeProfileIdCache });
-  }
-
-  async function loadProfiles() {
-    const result = await ensureProfiles();
-    profilesCache = result.profiles;
-    activeProfileIdCache = result.activeProfileId;
-    renderProfileSelect();
-    renderSelectedProfile();
-  }
-
-  profileSelect.addEventListener('change', async () => {
-    activeProfileIdCache = profileSelect.value;
-    await persistProfiles();
-    renderSelectedProfile();
-  });
-
-  $('opt-profile-add').addEventListener('click', async () => {
-    const p = { id: genId(), name: 'Новый профиль', text: DEFAULT_PROFILE, source: 'manual', updatedAt: Date.now() };
-    profilesCache.push(p);
-    activeProfileIdCache = p.id;
-    await persistProfiles();
-    renderProfileSelect();
-    renderSelectedProfile();
-    profileNameInput.focus();
-  });
-
-  $('opt-profile-rename').addEventListener('click', async () => {
-    const p = profilesCache.find(x => x.id === activeProfileIdCache);
-    const name = profileNameInput.value.trim();
-    if (!p || !name) return;
-    p.name = name;
-    await persistProfiles();
-    renderProfileSelect();
-    flashButton($('opt-profile-rename'), 'Готово ✓');
-  });
-
-  $('opt-profile-save-text').addEventListener('click', async () => {
-    const p = profilesCache.find(x => x.id === activeProfileIdCache);
-    if (!p) return;
-    p.text = profileTextarea.value;
-    p.updatedAt = Date.now();
-    await persistProfiles();
-    renderSelectedProfile();
-    flashButton($('opt-profile-save-text'), 'Сохранено ✓');
-  });
-
-  $('opt-profile-delete').addEventListener('click', async () => {
-    if (profilesCache.length <= 1) {
-      profileMeta.textContent = 'Нельзя удалить единственный профиль.';
-      return;
-    }
-    const idx = profilesCache.findIndex(x => x.id === activeProfileIdCache);
-    if (idx === -1) return;
-    if (!confirm('Удалить профиль «' + profilesCache[idx].name + '»?')) return;
-    profilesCache.splice(idx, 1);
-    activeProfileIdCache = profilesCache[0].id;
-    await persistProfiles();
-    renderProfileSelect();
-    renderSelectedProfile();
-  });
-
-  // ---------- сохранённые резюме кандидата (мульти-резюме для ATS) ----------
+  // ---------- резюме кандидата (мульти-резюме: вкладка «Профиль» + ATS) ----------
+  // До v0.4.5 здесь была вторая, отдельная секция «Профили кандидата» — она
+  // работала с тем же списком, но писала его в ключ `profiles`, который никто
+  // не читал. Секции объединены, ключ упразднён (см. constants.js).
 
   const resumeSelect = $('opt-resume-select');
   const resumeNameInput = $('opt-resume-name');
@@ -165,7 +77,7 @@
     savedResumesCache.forEach(r => {
       const opt = document.createElement('option');
       opt.value = r.id;
-      opt.textContent = r.name;
+      opt.textContent = r.name + (r.source === 'hh-import' ? ' (hh.ru)' : '');
       resumeSelect.appendChild(opt);
     });
     if (activeResumeIdCache) resumeSelect.value = activeResumeIdCache;
@@ -175,9 +87,13 @@
     const r = savedResumesCache.find(x => x.id === activeResumeIdCache);
     resumeNameInput.value = r ? r.name : '';
     resumeTextarea.value = r ? r.text : '';
-    resumeMeta.textContent = r
-      ? 'Обновлено: ' + (r.updatedAt ? new Date(r.updatedAt).toLocaleString('ru-RU') : 'недавно')
-      : '';
+    if (!r) {
+      resumeMeta.textContent = '';
+      return;
+    }
+    const origin = r.source === 'hh-import' ? 'импортировано с hh.ru' : 'введено вручную';
+    const when = r.updatedAt ? ' · обновлено ' + new Date(r.updatedAt).toLocaleString('ru-RU') : '';
+    resumeMeta.textContent = 'Источник: ' + origin + when;
   }
 
   async function persistSavedResumes() {
@@ -185,9 +101,9 @@
   }
 
   async function loadSavedResumes() {
-    const result = await ensureSavedResumes();
-    savedResumesCache = result.savedResumes;
-    activeResumeIdCache = result.activeResumeId;
+    const { savedResumes, activeResumeId } = await ensureSavedResumes();
+    savedResumesCache = savedResumes;
+    activeResumeIdCache = activeResumeId;
     renderResumeSelect();
     renderSelectedResume();
   }
@@ -244,6 +160,5 @@
   });
 
   load();
-  loadProfiles();
   loadSavedResumes();
 })();

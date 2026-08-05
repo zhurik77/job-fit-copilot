@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Fit Copilot",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "description": "Разбор совпадения вакансии, глубокий ATS-аудит резюме, мульти-резюме и сопроводительные письма (hh.ru, LinkedIn, Upwork).",
   "permissions": ["storage", "activeTab", "scripting", "sidePanel", "tabs"],
   "host_permissions": [

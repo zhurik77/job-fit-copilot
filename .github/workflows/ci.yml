@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # no-undef ловит класс ошибок, из-за которого в v0.4.4 уехали вызовы
+      # несуществующих функций: `node --check` их не видит, он проверяет
+      # только синтаксис.
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # Версия обязана совпадать в manifest.json, package.json и README —
+      # раньше это был пункт ручного чек-листа, теперь проверка.
+      - name: Версии синхронны
+        run: |
+          MANIFEST=$(node -p "require('./manifest.json').version")
+          PACKAGE=$(node -p "require('./package.json').version")
+          echo "manifest.json: $MANIFEST | package.json: $PACKAGE"
+          if [ "$MANIFEST" != "$PACKAGE" ]; then
+            echo "::error::manifest.json ($MANIFEST) и package.json ($PACKAGE) разошлись"
+            exit 1
+          fi
+          if ! grep -q "Job Fit Copilot v$MANIFEST" README.md; then
+            echo "::error::README.md не упоминает версию v$MANIFEST"
+            exit 1
+          fi
+
+      # Расширение грузится как unpacked — битый manifest ломает установку
+      # молча, поэтому проверяем, что он валиден и содержит обязательные поля.
+      - name: Манифест валиден
+        run: |
+          node -e "
+            const m = require('./manifest.json');
+            const required = ['manifest_version', 'name', 'version', 'permissions', 'background', 'side_panel'];
+            const missing = required.filter(k => !(k in m));
+            if (missing.length) { console.error('Нет полей:', missing.join(', ')); process.exit(1); }
+            if (m.manifest_version !== 3) { console.error('Ожидается Manifest V3'); process.exit(1); }
+            console.log('manifest.json валиден, MV3, версия', m.version);
+          "
+
+      # Все файлы, на которые ссылается манифест, должны существовать.
+      - name: Файлы из манифеста на месте
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = require('./manifest.json');
+            const files = [
+              m.background.service_worker,
+              m.side_panel.default_path,
+              m.options_ui.page,
+              ...m.content_scripts.flatMap(c => c.js),
+              ...Object.values(m.icons),
+            ];
+            const missing = files.filter(f => !fs.existsSync(f));
+            if (missing.length) { console.error('Файлы отсутствуют:', missing.join(', ')); process.exit(1); }
+            console.log(files.length + ' файлов из манифеста на месте');
+          "

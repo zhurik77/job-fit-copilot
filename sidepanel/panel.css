@@ -440,8 +440,11 @@ button.chip { cursor: pointer; }
   fill: none;
   stroke-width: 9;
   stroke-linecap: round;
-  stroke-dasharray: 188.5;
-  stroke-dashoffset: 188.5;
+  /* Стартовое состояние — пустая дуга при любом радиусе. Реальные
+     dasharray/dashoffset проставляет setArc() инлайном, считая длину
+     окружности из атрибута r конкретного элемента. */
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
   transition: stroke-dashoffset .5s ease;
 }
 .gauge-fill.good { stroke: var(--green); }
@@ -701,31 +704,128 @@ button.an-best { cursor: pointer; }
 .donut-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; flex: none; }
 .donut-legend-row { display: flex; align-items: center; }
 
+/* ---------- сравнение версий резюме под вакансию ---------- */
+
+.cmp-row {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; margin-bottom: 8px; background: var(--card);
+}
+.cmp-row--best { border-color: var(--green); background: var(--green-pale); }
+.cmp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cmp-name { font-weight: 700; font-size: 13.5px; color: var(--ink); flex: 1; min-width: 0; }
+.cmp-bar {
+  height: 8px; border-radius: 999px; background: var(--neutral-pale);
+  overflow: hidden; margin-bottom: 6px;
+}
+.cmp-bar span { display: block; height: 100%; border-radius: 999px; transition: width .5s var(--spring-ease); }
+.cmp-nums {
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.cmp-gaps { font-size: 12px; color: var(--red); margin-top: 5px; line-height: 1.45; }
+.cmp-row .linkbtn { margin-top: 8px; display: inline-block; }
+
+.bg-good { background: var(--green); }
+.bg-mid { background: var(--amber); }
+.bg-bad { background: var(--red); }
+
+/* ---------- шапка и сводка резюме ---------- */
+
+.rs-hero {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin: 12px 0 2px;
+}
+.rs-hero-main { min-width: 0; }
+.rs-title {
+  font-size: 17px; font-weight: 700; color: var(--ink);
+  line-height: 1.25; letter-spacing: -0.01em;
+}
+.rs-updated { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.rs-salary {
+  font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+  color: var(--amber-ink); flex: none; white-space: nowrap; padding-top: 3px;
+}
+
+/* Три числа, по которым видно состояние резюме без запуска разбора.
+   ATS-оценка сохраняется вместе с резюме, а не живёт только внутри
+   последнего аудита. */
+.rs-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin: 14px 0 4px;
+}
+.rs-stat {
+  background: var(--field); border-radius: 10px;
+  padding: 10px 8px; text-align: center;
+}
+.rs-stat-num {
+  font-family: var(--mono); font-size: 19px; font-weight: 700;
+  color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.rs-stat-num.good { color: var(--green); }
+.rs-stat-num.mid { color: var(--amber-ink); }
+.rs-stat-num.bad { color: var(--red); }
+.rs-stat-label { font-size: 10.5px; color: var(--muted); margin-top: 3px; line-height: 1.3; }
+.rs-stat-score { cursor: default; }
+.rs-stat-score.is-clickable { cursor: pointer; transition: background .15s var(--spring-ease); }
+.rs-stat-score.is-clickable:hover { background: var(--amber-pale); }
+
 /* ---------- структурный просмотр резюме ---------- */
 
-.rs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.rs-title { font-size: 15px; font-weight: 700; color: var(--ink); }
-.rs-salary { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--amber-ink); flex: none; }
-
 .rs-exp-item {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: var(--field);
+  border-left: 2px solid var(--line);
+  padding: 2px 0 2px 12px;
+  margin-bottom: 14px;
 }
-.rs-exp-company { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 3px; }
-.rs-exp-body { font-size: 12.5px; color: var(--ink); line-height: 1.5; white-space: pre-line; }
+.rs-exp-item:last-child { margin-bottom: 4px; }
+.rs-exp-company { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 4px; line-height: 1.35; }
+.rs-exp-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+.rs-exp-body { font-size: 12.5px; color: var(--ink); line-height: 1.55; white-space: pre-line; }
 
 .rs-skills { display: flex; flex-wrap: wrap; gap: 6px; }
 .rs-skills .chip { background: var(--blue-pale); color: var(--blue); }
 
-.rs-edu-item { font-size: 12.5px; color: var(--ink); margin-bottom: 4px; }
+.rs-edu-item {
+  font-size: 12.5px; color: var(--ink); margin-bottom: 6px;
+  padding-left: 12px; position: relative;
+}
+.rs-edu-item::before {
+  content: ""; position: absolute; left: 0; top: 7px;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--muted);
+}
+
+/* ---------- раскрывающийся блок ---------- */
+
+.disclosure summary {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; cursor: pointer; list-style: none; padding: 2px 0;
+}
+.disclosure summary::-webkit-details-marker { display: none; }
+.disclosure summary::after {
+  content: "▾"; color: var(--muted); font-size: 11px;
+  transition: transform .2s var(--spring-ease); flex: none;
+}
+.disclosure[open] summary::after { transform: rotate(180deg); }
+.disclosure summary:hover .label { color: var(--ink); }
+.disclosure-hint { font-size: 11px; color: var(--muted); margin-left: auto; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.disclosure-body { padding-top: 10px; }
 
 /* ---------- оценка резюме ---------- */
 
 .rr-score-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 8px; }
 .rr-score-row .tile-label { font-size: 11px; margin-top: 0; }
+
+/* Итог аудита: дуга слева, вердикт и динамика справа. Раньше кольцо стояло
+   по центру, а подпись под ним — читалось как декорация, а не как результат. */
+.rr-verdict { display: flex; align-items: center; gap: 14px; margin: 6px 0 16px; }
+.rr-verdict-text { min-width: 0; }
+.rr-verdict-title { font-weight: 700; font-size: 15px; color: var(--ink); margin-bottom: 3px; }
+.rr-verdict .meta { margin-bottom: 0; }
+
+.gauge { position: relative; flex: none; display: grid; place-items: center; }
+.gauge svg { transform: rotate(-90deg); }
+.gauge-track { fill: none; stroke: var(--line); stroke-width: 9; }
+.gauge-lg { width: 110px; height: 110px; }
+.gauge-lg .gauge-num { font-size: 30px; }
 
 /* ---------- ATS-разбор ---------- */
 
