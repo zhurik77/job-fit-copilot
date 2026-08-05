@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/* Тема продукта: тёмная основа, на которой оранжевый акцент расширения
+   работает в полную силу, плюс семантические цвета вердиктов — те же,
+   что и в самой панели (green/amber/red из iOS-палитры). */
+@theme {
+  --color-ink: #0B0C0E;
+  --color-ink-deep: #060708;
+  --color-surface: #131519;
+  --color-surface-lift: #1A1D22;
+  --color-line: #262A31;
+  --color-fg: #F2F4F7;
+  --color-fg-muted: #99A0AB;
+  --color-accent: #FF9500;
+  --color-accent-soft: #FFB84D;
+  --color-good: #34C759;
+  --color-mid: #FF9500;
+  --color-bad: #FF453A;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Mono", "JetBrains Mono", Consolas, "DejaVu Sans Mono", monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    /* clip, а не hidden: hidden на html создаёт скролл-контейнер и ломает
+       position: sticky у шапки. Нужно, чтобы широкая таблица сравнения
+       не растягивала страницу вбок на узких экранах. */
+    overflow-x: clip;
+  }
+
+  body {
+    background: var(--color-ink);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Заголовки набираются плотно и тяжело — это несущая часть образа,
+     а не нейтральная подача текста. */
+  h1, h2, h3 {
+    text-wrap: balance;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-ink-deep);
+  }
+}
+
+@layer utilities {
+  /* Тёплое свечение под героем и под скриншотами — оно связывает
+     тёмный фон с оранжевым продуктом. */
+  .glow-accent {
+    background:
+      radial-gradient(60rem 32rem at 15% -10%, rgba(255, 149, 0, 0.16), transparent 60%),
+      radial-gradient(48rem 28rem at 90% 5%, rgba(255, 149, 0, 0.08), transparent 65%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(180deg, var(--color-fg) 30%, rgba(242, 244, 247, 0.55));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Тонкая сетка на фоне — отсылка к таблице/ведомости, но фоном,
+     а не разлиновкой контента. */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 4rem 4rem;
+    mask-image: radial-gradient(60rem 40rem at 50% 0%, #000 30%, transparent 75%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

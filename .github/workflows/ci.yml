@@ -28,6 +28,28 @@ jobs:
       - name: Tests
         run: npm test
 
+      # Лендинг собирается из site/ в docs/, откуда его отдаёт GitHub Pages.
+      # Сборка в CI ловит поломку раньше, чем сайт уедет битым в продакшен.
+      - name: Установить зависимости сайта
+        run: npm ci
+        working-directory: site
+
+      - name: Собрать сайт
+        run: npm run build
+        working-directory: site
+
+      # docs/ коммитится (Pages отдаёт его напрямую), поэтому расхождение
+      # между исходником и собранным результатом означает, что кто-то забыл
+      # пересобрать перед коммитом.
+      - name: docs/ пересобран и закоммичен
+        run: |
+          if [ -n "$(git status --porcelain docs)" ]; then
+            echo "::error::docs/ расходится с site/ — выполните 'npm run build' в site/ и закоммитьте результат"
+            git status --short docs
+            exit 1
+          fi
+          echo "docs/ соответствует исходникам"
+
       # Версия обязана совпадать в manifest.json, package.json и README —
       # раньше это был пункт ручного чек-листа, теперь проверка.
       - name: Версии синхронны

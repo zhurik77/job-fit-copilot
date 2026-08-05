@@ -8,3 +8,6 @@ node_modules/
 
 # package-lock.json намеренно НЕ игнорируется: без него `npm ci` в CI
 # невозможен, а сборка перестаёт быть воспроизводимой.
+
+# Зависимости лендинга (site/package-lock.json коммитится — нужен для npm ci)
+site/node_modules/
