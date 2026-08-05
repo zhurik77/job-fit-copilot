@@ -92,7 +92,7 @@ function loadPanelExports() {
   const src = fs.readFileSync(PANEL_PATH, 'utf8');
   const marker = /\}\)\(\);\s*$/;
   if (!marker.test(src)) {
-    throw new Error('panel.js больше не заканчивается на })(); — обнови harness.js');
+    throw new Error('panel.js больше не заканчивается на })(); — обнови tools/panel-harness.js');
   }
   const instrumented = src.replace(
     marker,

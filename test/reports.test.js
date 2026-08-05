@@ -5,7 +5,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { loadPanelExports } = require('./harness');
+const { loadPanelExports } = require('../tools/panel-harness');
 
 const panel = loadPanelExports();
 const XSS = '<img src=x onerror="alert(1)">';
