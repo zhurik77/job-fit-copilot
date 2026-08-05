@@ -221,6 +221,29 @@
   .mode { display: flex; flex-direction: column; gap: 0.55rem; padding-top: 1rem; border-top: 2px solid var(--ink); }
   .mode p { font-size: 0.9375rem; color: var(--ink-soft); }
 
+  /* ---------- галерея интерфейса ---------- */
+
+  .shots { display: grid; gap: clamp(2rem, 5vw, 3.5rem); grid-template-columns: 1fr; }
+  @media (min-width: 54rem) { .shots { grid-template-columns: repeat(2, 1fr); } }
+
+  .shot { display: flex; flex-direction: column; gap: 0.9rem; }
+  .shot-caption { display: flex; flex-direction: column; gap: 0.35rem; }
+  .shot-caption h3 { margin: 0; }
+  .shot-caption p { font-size: 0.9375rem; color: var(--ink-soft); }
+  .shot figure { margin: 0; }
+  .shot img {
+    display: block; width: 100%; height: auto; max-width: 22rem;
+    border: 1px solid var(--rule); border-radius: 10px;
+    background: var(--paper-deep);
+  }
+  /* Длинные кадры подрезаем сверху: сигнал в первом экране, а не в подвале. */
+  .shot--tall figure {
+    max-width: 22rem; max-height: 30rem; overflow: hidden;
+    border-radius: 10px; border: 1px solid var(--rule);
+  }
+  .shot--tall img { border: none; border-radius: 0; max-width: none; }
+  .shot-note { font-size: 0.8125rem; color: var(--ink-soft); font-style: italic; }
+
   .rail { display: flex; flex-direction: column; gap: 1.6rem; }
   .rail-item { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; align-items: baseline; }
   .rail-item .mark {
@@ -437,6 +460,81 @@
           </p>
         </div>
       </div>
+    </section>
+
+    <section id="screens">
+      <div class="stack" style="margin-bottom: 2.5rem;">
+        <p class="eyebrow">Интерфейс</p>
+        <h2>Как это выглядит рядом с вакансией</h2>
+        <p>
+          Панель открывается сбоку от страницы, поэтому вакансия и разбор видны
+          одновременно — переключаться между вкладками не нужно.
+        </p>
+      </div>
+
+      <div class="shots">
+        <div class="shot shot--tall">
+          <div class="shot-caption">
+            <h3>Разбор совпадения</h3>
+            <p>
+              Вердикт, цена отклика в минутах и ведомость факторов. Каждая
+              строка ссылается на конкретный факт из вакансии и резюме.
+            </p>
+          </div>
+          <figure>
+            <img src="screenshot-fitcheck.jpg" width="800" height="3312" loading="lazy"
+                 alt="Панель Fit-Check: вердикт ОТКЛИКАТЬСЯ, индекс 78, разбор по факторам с дельтами от +18 до −10">
+          </figure>
+        </div>
+
+        <div class="shot shot--tall">
+          <div class="shot-caption">
+            <h3>Какое резюме отправлять</h3>
+            <p>
+              Одна вакансия против всех сохранённых версий резюме. Сортировка
+              по обязательным требованиям — они решают, пройдёте ли вы фильтр.
+            </p>
+          </div>
+          <figure>
+            <img src="screenshot-compare.jpg" width="800" height="2108" loading="lazy"
+                 alt="Сравнение резюме: версия AI-автоматизатор закрывает 75% обязательных требований, версия Business Analyst — 25%">
+          </figure>
+        </div>
+
+        <div class="shot shot--tall">
+          <div class="shot-caption">
+            <h3>ATS-разбор под резюме</h3>
+            <p>
+              Обязательные требования отдельно от желательных, со смысловым
+              покрытием: «год работы с LLM» закрывает «опыт работы с LLM».
+            </p>
+          </div>
+          <figure>
+            <img src="screenshot-ats-match.jpg" width="800" height="3690" loading="lazy"
+                 alt="ATS-разбор: покрытие обязательных требований 75%, желательных 100%, критичный пробел по Kubernetes">
+          </figure>
+        </div>
+
+        <div class="shot shot--tall">
+          <div class="shot-caption">
+            <h3>Аудит резюме</h3>
+            <p>
+              Взвешенная оценка по четырём критериям, построчные
+              переформулировки опыта и чек-лист правок под ранжирование hh.ru.
+            </p>
+          </div>
+          <figure>
+            <img src="screenshot-ats-audit.jpg" width="800" height="7648" loading="lazy"
+                 alt="Профиль кандидата: сводка резюме, ATS-оценка 78 и построчный разбор опыта с переформулировками">
+          </figure>
+        </div>
+      </div>
+
+      <p class="shot-note" style="margin-top: 1.5rem;">
+        Кадры сняты из настоящих файлов расширения командой <code>npm run shots</code>.
+        Заранее задан только ответ модели — живой запрос требует вашего ключа и
+        каждый раз возвращает другой текст.
+      </p>
     </section>
 
     <section id="honesty">
